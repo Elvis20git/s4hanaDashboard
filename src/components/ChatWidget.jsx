@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { esc } from '../lib/format.js';
 import { get } from '../state/store.js';
 
@@ -27,7 +27,7 @@ export function ChatWidget() {
   const wrapRef = useRef(null), fabRef = useRef(null), msgsRef = useRef(null), inputRef = useRef(null), hintRef = useRef(null);
   const faces = useRef([]), talkTimer = useRef(0), hintTimer = useRef(0), hintByHover = useRef(false);
   const live = useRef({ open: false, busy: false });
-  live.current = { open, busy };
+  useLayoutEffect(() => { live.current = { open, busy }; });
 
   const botState = state => faces.current.forEach(f => { if (!f) return; f.classList.remove('thinking', 'talking'); if (state !== 'idle') f.classList.add(state); });
   const botPop = () => faces.current.forEach(f => { if (!f) return; f.classList.remove('pop'); void f.offsetWidth; f.classList.add('pop'); });

@@ -10,7 +10,7 @@ let css = fs.readFileSync(src, 'utf8');
 
 // remove :root{...} blocks that only define tokens (first big one + the later --amber one)
 let removed = 0;
-css = css.replace(/:root\{[^}]*\}/g, m => { removed++; return ''; });
+css = css.replace(/:root\{[^}]*\}/g, () => { removed++; return ''; });
 
 const map = {
   'ink-2': 'color-ink-2', ink: 'color-ink',
@@ -26,7 +26,7 @@ const map = {
   'shadow-lg': 'shadow-lift', shadow: 'shadow-card',
 };
 const names = Object.keys(map).sort((a, b) => b.length - a.length).join('|');
-const re = new RegExp(`--(${names})(?![\w-])`, 'g');
+const re = new RegExp('--(' + names + ')(?![\\w-])', 'g');
 let renamed = 0;
 css = css.replace(re, (_, n) => { renamed++; return '--' + map[n]; });
 

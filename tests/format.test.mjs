@@ -1,14 +1,7 @@
 // Unit tests for the shared compact money formatter used by the chart / month-by-month tooltips.
-// public/format.js is a plain browser script, so it is loaded here the same way a browser would run it.
+// Ported from the source's server/tools/test-format.js: the assertions are unchanged; the formatter is now imported as an ES module.
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import vm from 'node:vm';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const src = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'public', 'format.js'), 'utf8');
-const ctx = {}; ctx.globalThis = ctx; vm.runInNewContext(src, ctx);
-const { formatMoneyCompact: f, formatAvgPriceKg: kg } = ctx;
+import { formatMoneyCompact as f, formatAvgPriceKg as kg } from '../src/lib/format.js';
 
 const cases = [
   [2662998, '$2.66M'], [2000000, '$2M'], [1500000, '$1.50M'],

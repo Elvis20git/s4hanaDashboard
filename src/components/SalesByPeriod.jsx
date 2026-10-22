@@ -32,7 +32,7 @@ export function SalesByPeriod() {
   }, []);
 
   const p = useMemo(() => buildPeriod(st, box), [st.data, st.priorPeriodData, box.width, box.height]);   // eslint-disable-line react-hooks/exhaustive-deps
-  if (p.geo) geoRef.current = { pts: p.geo.pts, W: p.geo.W, cxs: p.geo.cxs, cw: p.geo.cw };
+  useLayoutEffect(() => { if (p.geo) geoRef.current = { pts: p.geo.pts, W: p.geo.W, cxs: p.geo.cxs, cw: p.geo.cw }; }, [p]);
 
   useEffect(() => attachChartTooltip(svgRef.current, tipRef.current, () => geoRef.current), []);
   useAnimCard(cardRef, [p.chart && p.chart.innerHTML], periodOnPlay);

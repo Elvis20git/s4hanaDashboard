@@ -1,14 +1,9 @@
 // The module registry drives the sidebar, the router and the sticky filter bar, so its shape is checked here.
+// Ported from the source's server/tools/test-modules.js: the assertions are unchanged; the registry is now imported as an ES module.
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import vm from 'node:vm';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { MODULES, APP_NAME } from '../src/lib/modules.js';
 
-const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'public');
-const ctx = {}; vm.createContext(ctx);
-vm.runInContext(fs.readFileSync(path.join(dir, 'modules.js'), 'utf8') + '\nthis.MODULES = MODULES; this.APP_NAME = APP_NAME;', ctx);
-const M = JSON.parse(JSON.stringify(ctx.MODULES));   // plain objects of this realm (arrays made in the sandbox are not deepEqual to ours)
+const M = JSON.parse(JSON.stringify(MODULES));
 
 assert.equal(M.length, 8);
 assert.deepEqual(M.map(m => m.label), ['Sales', 'Production', 'AR & AP aging', 'Inventory', 'Goods in transit', 'Tax', 'Data Management', 'Administration']);
@@ -26,5 +21,5 @@ assert.deepEqual(sales.filters, { period: true, dataThrough: true, statusDots: t
 assert.deepEqual(M.filter(m => m.filters.statusDots).map(m => m.route), ['overview']);
 assert.deepEqual(M.filter(m => m.filters.dataThrough).map(m => m.route), ['overview']);
 for (const r of ['data', 'admin']) assert.equal(!!M.find(m => m.route === r).filters.period, false);
-assert.equal(ctx.APP_NAME, 'AIF Analytics');
+assert.equal(APP_NAME, 'AIF Analytics');
 console.log('module registry: ALL CHECKS PASSED');

@@ -8,8 +8,7 @@ import { HelpIcon } from './HelpIcon.jsx';
     animation) when the box is resized; a resize that lands during the entrance animation waits for it to finish. */
 function Spark({ periods }) {
   const ref = useRef(null), periodsRef = useRef(periods);
-  periodsRef.current = periods;
-  useLayoutEffect(() => { if (ref.current && periods) drawSpark(ref.current, periods, true); }, [periods]);
+  useLayoutEffect(() => { periodsRef.current = periods; if (ref.current && periods) drawSpark(ref.current, periods, true); }, [periods]);
   useEffect(() => {
     const box = ref.current && ref.current.parentElement; if (!box || !window.ResizeObserver) return undefined;
     let last = '', timer = 0;

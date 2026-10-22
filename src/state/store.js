@@ -66,7 +66,7 @@ export async function loadStatus() {
 export async function loadData() {
   const st = get();
   const q = new URLSearchParams({ source: st.source });
-  let from = st.from, to = st.to, data = null, error = null;
+  let from = st.from, to = st.to, data, error;
   if (from && to) { q.set('from', from); q.set('to', to); }
   try { data = await api('/api/data?' + q); error = null; } catch (e) { error = e.message; data = null; }
   // A period from the URL that this dataset does not have (or is back to front) is dropped, falling back to the default below

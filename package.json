@@ -14,8 +14,7 @@
     "lint": "eslint src tests parity",
     "format": "prettier --write src tests parity",
     "test": "node tests/run-all.mjs",
-    "parity": "node parity/run-parity.mjs",
-    "parity:capture": "node parity/capture-baseline.mjs"
+    "parity": "node parity/run-parity.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",
