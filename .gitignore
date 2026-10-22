@@ -1,0 +1,27 @@
+# Secrets — never commit
+.env
+*.env
+!.env.example
+!server/config/.env.example
+server/config/.env
+
+# Company data and generated output
+server/cache/
+cache/
+server/validation/
+server/fixtures/
+*.xlsx
+parity/out/
+parity/baseline/*.png
+
+# Dependencies and build
+node_modules/
+dist/
+*.log
+
+# OS / editor
+Thumbs.db
+.DS_Store
+~$*
+parity-api.log
+vite.log

@@ -1,0 +1,8 @@
+{
+  "note": "Access model mirrors the existing Administration screen. Rights: changeSource, importData, manageApiConfig, adminRefresh, manageUsers. '*' means every right.",
+  "people": [
+    { "username": "Derrick-a", "name": "Derrick-a", "role": "ADMIN", "rights": ["*"], "active": true },
+    { "username": "Elvis-a",   "name": "Elvis-a",   "role": "ADMIN", "rights": ["*"], "active": true },
+    { "username": "viewer",    "name": "Viewer",    "role": "VIEWER", "rights": [], "active": true }
+  ]
+}

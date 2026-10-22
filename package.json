@@ -1,0 +1,39 @@
+{
+  "name": "aif-analytics-vite",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AIF Analytics dashboard — Vite + React + Tailwind CSS port (same API, same numbers).",
+  "scripts": {
+    "postinstall": "npm --prefix server install",
+    "dev": "concurrently -k -n api,web -c blue,green \"npm --prefix server run dev\" \"vite\"",
+    "dev:web": "vite",
+    "dev:api": "npm --prefix server run dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src tests parity",
+    "format": "prettier --write src tests parity",
+    "test": "node tests/run-all.mjs",
+    "parity": "node parity/run-parity.mjs",
+    "parity:capture": "node parity/capture-baseline.mjs"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "@playwright/test": "^1.64.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^9.2.1",
+    "eslint": "^10.13.0",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "globals": "^16.0.0",
+    "pixelmatch": "^8.0.0",
+    "pngjs": "^7.0.0",
+    "prettier": "^3.9.10",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.3.5"
+  }
+}

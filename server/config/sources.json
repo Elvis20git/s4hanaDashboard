@@ -1,0 +1,79 @@
+{
+  "note": "Cost buckets established by measurement (Step 1 residual test), not assumption. See docs/CALCULATION.md.",
+  "costBuckets": {
+    "materials": {
+      "prefixes": [
+        "51"
+      ],
+      "label": "Direct materials (movement 261 net of 262)"
+    },
+    "activities": {
+      "accounts": [
+        "54400000",
+        "54093000",
+        "54053000",
+        "54200100"
+      ],
+      "label": "Activity cost — labour and machine confirmations"
+    },
+    "overhead": {
+      "accounts": [
+        "94301000"
+      ],
+      "label": "AIF Overhead Costs"
+    },
+    "pairedOffset": {
+      "accounts": [
+        "13200000"
+      ],
+      "label": "Matched offset to 54200100; the pair nets to zero on the 2 orders that carry it. Included so per-order closure holds exactly."
+    }
+  },
+  "overheadSources": {
+    "note": "G/L 94301000 'AIF Overhead Costs' feeds product cost through two sources. Only an INCLUDED source counts toward VC (COGM); an excluded one is dropped, and any source not listed in either list is excluded by default and logged as a warning.",
+    "gl": "94301000",
+    "included": [
+      {
+        "id": "10101303/Z2",
+        "label": "Utilities"
+      }
+    ],
+    "excluded": [
+      "10101303/Z1"
+    ],
+    "identification": {
+      "mode": "rate-pair (interim)",
+      "note": "The journal view carries no cost-center / activity-type field, so the source is read from the posting pattern: each confirmation posts exactly two overhead lines; the higher rate per kg is the excluded source, the lower rate the included one. A line may carry an explicit OverheadSource field instead, which then wins. Replace this with the real key once SAP exposes CostCenter + CostCtrActivityType.",
+      "highRate": "10101303/Z1",
+      "lowRate": "10101303/Z2"
+    }
+  },
+  "excludedFromCost": {
+    "52": "Production variances — not manufacturing cost",
+    "55": "Goods-receipt / GR-IR clearing — the credit side of the 101 receipt",
+    "24": "Settlement / WIP clearing"
+  },
+  "residualTest": {
+    "runOn": "287 closed-period production orders",
+    "costCollectorTotal": 23967541.18,
+    "materials51": 18040160.88,
+    "overhead94301000": 5621873.94,
+    "residual": 305506.36,
+    "residualPct": 1.27,
+    "verdict": "Residual is material — an activity bucket exists and is included."
+  },
+  "materialLedger": {
+    "actualCostingActive": false,
+    "evidence": "ProductPriceControl 'S' on sampled materials; A_ProductMLPrices returns FuturePrice 0 / PlannedPrice 0; no periodic unit price or actual cost component split exposed; InventoryValuationProcedure blank on A_ProductPlant.",
+    "consequence": "COGM is derived per the method in docs/CALCULATION.md."
+  },
+  "nonManufacturedProducts": [
+    "13000000",
+    "13000001",
+    "13000002",
+    "61000009",
+    "61000010",
+    "61000011",
+    "21000041"
+  ]
+}

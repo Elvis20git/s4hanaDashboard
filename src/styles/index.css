@@ -1,0 +1,57 @@
+/* AIF Analytics — Tailwind CSS v4 entry.
+   Preflight is deliberately NOT imported: the source dashboard styles its own base (box-sizing, margins, form controls) in
+   components.css, and Preflight's resets would change how headings, buttons, images and borders render. Theme + utilities only. */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "./components.css";
+
+/* Design tokens — ported verbatim from the source's :root block (which were themselves ported from the production
+   Tailwind @theme). Same hex values; names follow Tailwind's namespaces so utilities such as bg-green, text-tx-2,
+   font-display and shadow-card exist. */
+@theme static {
+  /* Ink — dark rail and hero gradients */
+  --color-ink: #0C1613;
+  --color-ink-2: #132420;
+  --color-hero-a: #0E241B;
+  --color-hero-b: #16402E;
+  --color-hero-c: #1E5A3E;
+  /* Surfaces */
+  --color-canvas: #F4F7F5;
+  --color-card: #FFFFFF;
+  --color-line: #E4E9E5;
+  --color-line-2: #EEF2EF;
+  /* Green — primary accent */
+  --color-green: #1B7A54;
+  --color-green-d: #125C3F;
+  --color-mint: #3FA378;
+  --color-green-soft: #E8F2ED;
+  --color-green-glow: #D6EBE0;
+  /* Gold — margin and estimated-value signals */
+  --color-gold: #C9922E;
+  --color-gold-soft: #F7EEDC;
+  --color-gold-ink: #7A521F;
+  --color-gold-line: #EBD9C2;
+  /* Amber — the QTY (MT) series */
+  --color-amber: #B7791F;
+  /* Clay — losses and reversals */
+  --color-clay: #B5462F;
+  --color-clay-soft: #F6E7E2;
+  /* Text */
+  --color-tx: #12211C;
+  --color-tx-2: #5B6B64;
+  --color-tx-3: #8A978F;
+  /* Rail text — dark background, its own ramp */
+  --color-rail-tx: #DCE6E1;
+  --color-rail-tx-2: #A9BAB2;
+  --color-rail-tx-3: #7E9188;
+  --color-rail-tx-4: #5F7168;
+  --color-hero-tx: #8FBAA6;
+  /* Type */
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  /* Elevation */
+  --shadow-card: 0 1px 2px rgba(12,22,19,.04), 0 10px 30px -14px rgba(12,22,19,.14);
+  --shadow-lift: 0 2px 6px rgba(12,22,19,.06), 0 26px 50px -24px rgba(12,22,19,.30);
+}

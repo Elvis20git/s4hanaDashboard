@@ -1,0 +1,23 @@
+import { build } from '../pipeline/build.js';
+import fs from 'node:fs';
+const d = await build({ log: m => console.log('  ' + m) });
+fs.mkdirSync('validation', { recursive: true });
+fs.writeFileSync('validation/dataset.json', JSON.stringify(d));
+const c = d.controls;
+console.log('\n=== RECONCILIATION ===');
+console.log('period      revenue USD        target        diff   lines target  ok');
+for (const r of c.reconciliation.rows)
+  console.log(`  ${r.period} ${r.revenue.toFixed(2).padStart(15)} ${r.target.toFixed(2).padStart(13)} ${r.diff.toFixed(2).padStart(10)} ${String(r.lines).padStart(6)} ${String(r.targetLines).padStart(5)}   ${r.pass?'OK':'XX'}`);
+const t = c.reconciliation.total;
+console.log(`  YTD   ${t.revenue.toFixed(2).padStart(15)} ${t.target.toFixed(2).padStart(13)} ${t.diff.toFixed(2).padStart(10)} ${String(t.lines).padStart(6)} ${String(t.targetLines).padStart(5)}   ${c.reconciliation.pass?'OK':'XX'}`);
+console.log('\n=== CONTROLS ===');
+console.log(`batch closure : ${c.batchClosure.total} batches, ${c.batchClosure.breaches.length} breaches`);
+for (const b of c.batchClosure.breaches.slice(0,8)) console.log(`   BREACH ${b.batch} cost ${b.batchCost} allocated ${b.allocatedCogm} ratio ${b.ratio}`);
+console.log(`order closure : ${c.orderClosure.total} orders, ${c.orderClosure.breaches.length} breaches`);
+for (const b of c.orderClosure.breaches.slice(0,8)) console.log(`   BREACH ${b.order} expected ${b.expected} distributed ${b.distributed} diff ${b.diff}`);
+console.log(`qty control   : ${c.quantityControl.total} batches, ${c.quantityControl.breaches.length} breaches`);
+for (const b of c.quantityControl.breaches.slice(0,8)) console.log(`   BREACH ${b.batch} delivered ${b.deliveredKg} produced ${b.producedKg} excess ${b.excessKg}`);
+console.log('\n=== COVERAGE ===');
+console.log(`overall ${c.coverageOverall}%   not costed revenue ${(c.summary.revenue - c.coverage.reduce((s,x)=>s+x.revenueFinal+x.revenueProvisional,0)).toFixed(2)}`);
+for (const r of c.coverage) console.log(`  ${r.period} rev ${r.revenue.toFixed(2).padStart(13)} cogm ${r.cogm.toFixed(2).padStart(13)} cm ${r.cm.toFixed(2).padStart(12)} cov ${String(r.coveragePct).padStart(6)}%`);
+console.log('\n=== SUMMARY ===', JSON.stringify(c.summary), JSON.stringify(d.counts));
