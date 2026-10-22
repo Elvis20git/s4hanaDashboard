@@ -10,7 +10,7 @@ const OUT = 'parity/out'; fs.mkdirSync(OUT, { recursive: true });
 const widths = [1440, 1024, 390];
 const steps = {
   overview: async () => {},
-  'overview-scrolled': async p => { await p.evaluate(() => window.scrollTo(0, 700)); await p.waitForTimeout(500); },
+  'overview-scrolled': async p => { await p.evaluate(() => window.scrollTo(0, 700)); await p.waitForTimeout(3000); },
   'hover-bar': async p => {
     await p.evaluate(() => document.querySelector('#chart').scrollIntoView({ block: 'center' })); await p.waitForTimeout(400);
     const bx = await p.locator('#chart .bar-hit').nth(4).boundingBox();
@@ -20,9 +20,9 @@ const steps = {
   validation: async p => { await p.evaluate(() => (location.hash = '#validation')); await p.waitForTimeout(600); },
   admin: async p => { await p.evaluate(() => (location.hash = '#admin')); await p.waitForTimeout(800); },
   soon: async p => { await p.evaluate(() => (location.hash = '#production')); await p.waitForTimeout(600); },
-  'drill-product': async p => { await p.evaluate(() => document.querySelector('#prodTbl .rowbtn').click());   // scripted click: at 390px the source's invisible #popScrim swallows real taps (see MIGRATION.md)
-    await p.waitForTimeout(1200); },
-  'drill-period': async p => { await p.evaluate(() => document.querySelector('#mlist .mrow').click());
+  'drill-product': async p => { await p.locator('#prodTbl .rowbtn').first().click();
+   await p.waitForTimeout(1200); },
+  'drill-period': async p => { await p.locator('#mlist .mrow').first().click();
     await p.waitForTimeout(1200); },
 };
 const browser = await chromium.launch();

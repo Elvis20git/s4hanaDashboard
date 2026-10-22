@@ -404,6 +404,7 @@ th .help-ico{text-transform:none;letter-spacing:0;font-weight:700}
 .popover.arrow-top .pop-arrow{top:-6px;border-right:0;border-bottom:0}
 .popover.arrow-bottom .pop-arrow{bottom:-6px;border-left:0;border-top:0}
 .pop-scrim{position:fixed;inset:0;background:transparent;z-index:190;display:none}
+.pop-scrim[hidden]{display:none}   /* the mobile rule below sets display:block, which would otherwise override [hidden] and leave an invisible layer swallowing taps */
 @media(prefers-reduced-motion:reduce){.popover{transition:none}}
 /* Mobile — a compact bottom sheet instead of an anchored card: the JS skips
    computing top/left/arrow placement once this media query is active, so

@@ -133,10 +133,9 @@ Notes:
 
 ## Known gaps and findings (for your decision)
 
-1. **Source bug, reproduced faithfully — taps blocked on phones.** At the mobile breakpoint, `.pop-scrim{display:block}` overrides its
-   `hidden` attribute, so an invisible full-screen layer covers the page and swallows real taps (verified in the source and here:
-   `elementFromPoint` returns `#popScrim`). Not changed, because the brief is like-for-like. One-line fix when you want it:
-   `.pop-scrim[hidden]{display:none}`. The visual tests use scripted clicks for the drawer at 390 px for this reason.
+1. **Phone overlay bug — fixed in both apps (on request, after the port).** At the mobile breakpoint `.pop-scrim{display:block}` overrode its
+   `hidden` attribute, so an invisible full-screen layer swallowed real taps. Fix: `.pop-scrim[hidden]{display:none}` in the source's
+   `app.css` (and so, via `scripts/port-css.mjs`, in `components.css`). This is the only intentional behaviour difference from the original port.
 2. **Source bug, reproduced faithfully — period filter never written to the URL.** `syncFilterUrl()` exists but is never called; the URL is
    read on load only. Earlier I said the period was "stored in the URL": that was incorrect. The function is ported and exported, uncalled.
 3. The bundle is larger than the source (React runtime, about +30 kB gzip); expected for this stack.
