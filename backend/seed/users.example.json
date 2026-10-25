@@ -1,0 +1,15 @@
+{
+  "users": [
+    {
+      "username": "jane-a",
+      "password": "CHANGE-ME",
+      "email": "jane.doe@example.com",
+      "display_name": "Jane D",
+      "job_title": "Finance Analyst",
+      "department": "Finance",
+      "role": "SUPERUSER | ANALYST | VIEWER",
+      "is_data_steward": false,
+      "allowed_dashboards": ["sales", "ar_ap_aging", "tax"]
+    }
+  ]
+}

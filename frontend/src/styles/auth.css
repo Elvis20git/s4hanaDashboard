@@ -1,0 +1,70 @@
+/* Sign-in screens and toasts. Dark glass on the app's ink/green tokens; matches the design reference. */
+.au-page{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:96px 20px 28px;position:relative;color:#fff;font-family:var(--font-body);
+  background:radial-gradient(1100px 620px at 50% -8%,#0f4d33 0%,#0a2f20 46%,#071a13 100%)}
+.au-page::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(520px 320px at 50% 28%,rgba(63,163,120,.16),transparent 70%)}
+.au-top{position:absolute;top:22px;left:0;right:0;padding:0 clamp(20px,10vw,180px);display:flex;align-items:center;gap:12px;z-index:2}
+.au-spacer{flex:1}
+.au-pill{display:inline-flex;align-items:center;gap:9px;height:38px;padding:0 16px;border-radius:999px;background:rgba(5,16,11,.72);border:1px solid rgba(255,255,255,.07);font-size:13.5px;font-weight:600;color:#fff;font-family:inherit}
+.au-pill.au-btn{cursor:pointer}.au-pill.au-btn:hover{border-color:rgba(255,255,255,.22)}
+.au-dot{width:9px;height:9px;border-radius:50%;background:#2ee08a;box-shadow:0 0 8px #2ee08a}
+.au-pal{width:14px;height:14px;border-radius:50%;background:conic-gradient(#3fd68a,#2bb673,#8fe3b5,#3fd68a)}
+.au-help{width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.07);background:rgba(5,16,11,.72);color:#fff;font-weight:800;font-size:15px;cursor:pointer}
+.au-brand{display:flex;align-items:center;gap:20px;margin-bottom:34px;z-index:1}
+.au-mark{width:66px;height:66px;border-radius:16px;background:linear-gradient(180deg,#25a566,#14804d);display:grid;place-items:center;font:800 28px var(--font-display);box-shadow:0 8px 24px -8px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.25)}
+.au-brand h1{margin:0;font:700 36px/1.05 var(--font-display);letter-spacing:-.01em}
+.au-brand p{margin:6px 0 0;font-size:17px;color:#b7cfc4}
+.au-card{width:min(536px,100%);border-radius:30px;padding:38px 38px 34px;z-index:1;background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 30px 80px -30px rgba(0,0,0,.7);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.au-view{animation:au-in .32s cubic-bezier(.2,.8,.2,1) both}
+@keyframes au-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.au-view{animation:none}}
+.au-h2{margin:0 0 8px;font:700 24px var(--font-display)}
+.au-muted{margin:0 0 22px;font-size:14.5px;line-height:1.55;color:#a9c4b8}
+.au-center{text-align:center}.au-center .au-cta{margin-top:10px}
+.au-badge-ok{width:56px;height:56px;margin:4px auto 16px;border-radius:50%;display:grid;place-items:center;font-size:26px;background:rgba(46,224,138,.14);color:#2ee08a;border:1px solid rgba(46,224,138,.4)}
+.au-field{margin-bottom:22px}
+.au-label-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.au-label-row label{font-size:14px;font-weight:700;letter-spacing:.02em;text-transform:uppercase}
+.au-input{display:flex;align-items:center;height:56px;border-radius:14px;background:rgba(3,14,9,.78);border:1px solid rgba(255,255,255,.09);transition:border-color .15s,box-shadow .15s}
+.au-input:focus-within{border-color:#2ee08a;box-shadow:0 0 0 3px rgba(46,224,138,.16)}
+.au-input input{flex:1;min-width:0;height:100%;background:none;border:0;outline:0;color:#fff;font:500 16px var(--font-body);padding:0 20px}
+.au-input input::placeholder{color:#8aa89b}
+.au-pw input{padding-right:6px;letter-spacing:.02em}
+.au-eye{border:0;background:none;color:#cfe3d9;cursor:pointer;padding:0 16px;height:100%;display:grid;place-items:center}.au-eye:hover{color:#fff}
+.au-link{background:none;border:0;padding:0;color:#2ee08a;font:600 14.5px var(--font-body);cursor:pointer}.au-link:hover{text-decoration:underline}
+.au-back{display:block;margin:16px auto 0}
+.au-check{display:flex;align-items:center;gap:12px;margin:2px 0 24px;font-size:15px;font-weight:500;cursor:pointer}
+.au-check input{width:20px;height:20px;accent-color:#22b36a;cursor:pointer}
+.au-cta{width:100%;height:62px;border-radius:15px;border:1px solid rgba(255,255,255,.12);cursor:pointer;color:#fff;font:700 19px var(--font-body);display:flex;align-items:center;justify-content:center;gap:10px;
+  background:linear-gradient(180deg,#25b061,#168c4a);box-shadow:0 12px 30px -14px rgba(37,176,97,.8),inset 0 1px 0 rgba(255,255,255,.2);transition:filter .15s,transform .05s}
+.au-cta:hover:not(:disabled){filter:brightness(1.08)}.au-cta:active:not(:disabled){transform:translateY(1px)}
+.au-cta:disabled{opacity:.55;cursor:not-allowed}
+.au-or{position:relative;text-align:center;margin:26px 0 22px}
+.au-or::before{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(255,255,255,.1)}
+.au-or span{position:relative;background:#0c2a1d;padding:5px 14px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.13em;color:#d8e8e0;border:1px solid rgba(255,255,255,.07)}
+.au-sso{width:100%;height:56px;border-radius:14px;cursor:pointer;color:#fff;font:600 16px var(--font-body);display:flex;align-items:center;justify-content:center;gap:12px;background:rgba(3,14,9,.55);border:1px solid rgba(255,255,255,.1)}
+.au-sso:hover{border-color:rgba(255,255,255,.24)}
+.au-error{margin:0 0 20px;padding:13px 16px;border-radius:12px;background:rgba(224,86,64,.14);border:1px solid rgba(224,86,64,.5);color:#ffd0c7;font-size:14.5px;font-weight:500}
+.au-hint{margin:-4px 0 14px;font-size:13px;color:#f3c98b}
+.au-rules{list-style:none;margin:-6px 0 20px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:13px;color:#8fb0a2}
+.au-rules li{display:flex;align-items:center;gap:8px}.au-rules li i{font-style:normal;width:16px;text-align:center}
+.au-rules li.ok{color:#2ee08a}
+.au-foot{margin-top:auto;padding-top:38px;text-align:center;z-index:1}
+.au-company{font-size:15px;font-weight:600;color:#e6f0eb}
+.au-links{margin-top:10px;font-size:14px;color:#9db7ab;display:flex;gap:14px;justify-content:center}
+.au-links a{color:#9db7ab;text-decoration:none}.au-links a:hover{color:#fff}.au-links b{font-weight:400;opacity:.6}
+.au-splash{margin:auto;display:grid;place-items:center}
+.au-spin{width:18px;height:18px;border-radius:50%;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:au-rot .7s linear infinite;display:inline-block}
+.au-spin.big{width:42px;height:42px;border-width:4px;border-color:rgba(255,255,255,.2);border-top-color:#2ee08a}
+@keyframes au-rot{to{transform:rotate(360deg)}}
+@media (max-width:640px){.au-top{padding:0 14px}.au-pill.au-btn{display:none}.au-brand h1{font-size:28px}.au-card{padding:26px 22px}.au-rules{grid-template-columns:1fr}}
+
+/* toasts (shared by sign-in and the dashboard) */
+.toaster{position:fixed;right:20px;bottom:20px;z-index:200;display:flex;flex-direction:column;gap:10px;max-width:min(380px,calc(100vw - 40px))}
+.toast{padding:12px 16px;border-radius:12px;font-size:13.5px;font-weight:500;line-height:1.4;cursor:pointer;background:var(--color-ink);color:#fff;box-shadow:var(--shadow-lift);border-left:4px solid var(--color-mint);animation:au-in .22s ease both}
+.toast.err{border-left-color:var(--color-clay)}.toast.ok{border-left-color:#2ee08a}
+
+/* "no dashboards assigned" empty state */
+.noaccess{max-width:520px;margin:12vh auto;text-align:center;padding:36px 28px;background:var(--color-card);border:1px solid var(--color-line);border-radius:20px;box-shadow:var(--shadow-card)}
+.noaccess h2{margin:12px 0 6px;font:600 20px var(--font-display);color:var(--color-tx)}.noaccess p{margin:0;color:var(--color-tx-2);font-size:14px;line-height:1.55}
+.noaccess .ico{width:30px;height:30px;color:var(--color-green)}

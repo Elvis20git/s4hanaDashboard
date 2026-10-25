@@ -2,17 +2,10 @@
 .env
 *.env
 !.env.example
-!server/config/.env.example
-server/config/.env
 
 # Company data and generated output
-server/cache/
 cache/
-server/validation/
-server/fixtures/
 *.xlsx
-parity/out/
-parity/baseline/*.png
 
 # Dependencies and build
 node_modules/
@@ -23,5 +16,10 @@ dist/
 Thumbs.db
 .DS_Store
 ~$*
-parity-api.log
 vite.log
+
+# Auth (local only)
+backend/seed/users.local.json
+backend/db.sqlite3
+backend/.jwt_secret.local
+backend/config/Live API and Credentials.txt

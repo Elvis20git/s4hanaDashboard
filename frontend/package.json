@@ -1,0 +1,38 @@
+{
+  "name": "aif-analytics-vite",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AIF Analytics dashboard \u2014 Vite + React + Tailwind CSS front end for the Django API in backend/.",
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c blue,green \"npm run dev:api\" \"vite\"",
+    "dev:web": "vite",
+    "dev:api": "python ../backend/manage.py runserver 5180 --noreload",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src tests",
+    "format": "prettier --write src tests",
+    "test": "node tests/run-all.mjs",
+    "test:api": "python ../backend/manage.py test analytics -v 1",
+    "capture:reference-pack": "node tools/reference-pack/capture.mjs"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "@playwright/test": "^1.64.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^9.2.1",
+    "eslint": "^10.13.0",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "globals": "^16.0.0",
+    "pixelmatch": "^8.0.0",
+    "pngjs": "^7.0.0",
+    "prettier": "^3.9.10",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.3.5"
+  }
+}

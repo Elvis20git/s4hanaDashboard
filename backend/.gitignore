@@ -1,0 +1,9 @@
+config/.env
+cache/
+validation/
+__pycache__/
+*.pyc
+seed/users.local.json
+db.sqlite3
+.jwt_secret.local
+config/Live API and Credentials.txt

@@ -1,0 +1,919 @@
+/* Component CSS carried over from the original dashboard's app.css; the design tokens live in src/styles/index.css (@theme).
+   Everything below is that component CSS, with the token names mapped to Tailwind's `--color-*` namespace and wrapped in
+   @layer components. */
+@layer components {
+/* ==========================================================================
+   Design tokens — ported verbatim from the production interface
+   (github.com/Elvis20git/aifdash-frontend, src/index.css's @theme block).
+   Same hex values as that app's Tailwind tokens; named as plain CSS custom
+   properties here since this app has no Tailwind build step to read a
+   @theme block from. See aif-localhost-reskin-prompt.md, Step 0.
+   ========================================================================== */
+
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{background:var(--color-canvas);color:var(--color-tx);font-family:var(--font-body);-webkit-font-smoothing:antialiased;line-height:1.45}
+/* Tabular figures for every number on the page — without this, digits change
+   width between renders and a currency column visibly jitters when the
+   month filter changes. */
+.num{font-family:var(--font-display);font-feature-settings:"tnum" 1;letter-spacing:-.015em}
+.mono{font-family:var(--font-mono)}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes grow-y{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes grow-x{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes pulse-dot{0%,100%{opacity:.5}50%{opacity:.9}}
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
+.rise{opacity:0;animation:rise .6s cubic-bezier(.2,.7,.3,1) forwards}
+/* Thin, soft scrollbar for panels that scroll internally — so a long list
+   doesn't announce itself with a chunky default bar on Windows. */
+.scroll-soft{scrollbar-width:thin;scrollbar-color:#CBD8D1 transparent}
+.scroll-soft::-webkit-scrollbar{width:8px;height:8px}
+.scroll-soft::-webkit-scrollbar-thumb{background:#CBD8D1;border-radius:4px}
+.scroll-soft::-webkit-scrollbar-track{background:transparent}
+/* min-width:0 on the 1fr column matters: a grid track defaults to
+   minmax(auto, 1fr), so without it the track won't shrink below its
+   content's intrinsic width — a wide flex row inside (the header controls,
+   once there were five of them instead of two) would force the whole
+   column wider than the viewport instead of actually wrapping at it. */
+.app{display:grid;grid-template-columns:236px 1fr;min-height:100vh}
+.app > .main{min-width:0}
+.rail{background:var(--color-ink);color:var(--color-rail-tx);padding:22px 18px;display:flex;flex-direction:column;gap:24px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:11px}
+.brand .mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--color-mint),var(--color-green-d));display:grid;place-items:center;color:#fff;font-family:'Space Grotesk';font-weight:700;font-size:16px;box-shadow:0 4px 14px -4px rgba(63,163,120,.6)}
+.brand h1{font-size:14px;margin:0;font-weight:600;color:#fff}.brand span{font-size:11px;color:var(--color-rail-tx-3);display:block;margin-top:1px}
+.nav{display:flex;flex-direction:column;gap:2px}
+#navModules{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:8px;color:var(--color-rail-tx-2);text-decoration:none;font-size:13px;font-weight:500;transition:.16s}
+.nav a.on{background:var(--color-ink-2);color:#fff}.nav a:hover:not(.on){background:rgba(255,255,255,.05);color:var(--color-rail-tx);transform:translateX(2px)}
+.nav a .ico{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+.nav a.soon-item{color:var(--color-rail-tx-3)}
+.nav a.soon-item .ico{opacity:.6}
+.nav a .soon{margin-left:auto;font-size:8.5px;font-weight:700;letter-spacing:.06em;border:1px solid rgba(255,255,255,.18);color:var(--color-rail-tx-3);padding:1px 6px;border-radius:4px}
+.rail-divider{height:1px;background:rgba(255,255,255,.08);margin:10px 11px}
+.rail .foot{margin-top:auto;font-size:11px;color:var(--color-rail-tx-4);line-height:1.6}
+.rail .foot .user{color:var(--color-rail-tx);font-weight:600;font-size:12.5px}
+.rail .foot .signout{display:inline-block;margin-top:3px;color:var(--color-rail-tx-3);text-decoration:underline;cursor:pointer;background:none;border:0;padding:0;font:inherit;font-size:11px}
+.rail .foot .signout:hover{color:var(--color-rail-tx)}
+.main{padding:24px 30px 64px}
+.main-in{max-width:1480px;margin:0 auto}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:18px;flex-wrap:wrap}
+.topbar .sub{color:var(--color-tx-2);font-size:13px}.topbar h2{margin:0;font-size:15px;font-weight:600;color:var(--color-tx-2);letter-spacing:.02em}
+/* Sales page header only (sales-header-restyle-prompt.md) — a light,
+   subtly bordered surface matching this dashboard's other cards, rather
+   than sitting directly on the canvas background like the other pages'
+   plain topbars still do. */
+.topbar-card{background:var(--color-card);border:1px solid var(--color-line);border-radius:16px;box-shadow:var(--shadow-card);padding:16px 20px}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+/* From/To — one bordered pill instead of two standalone controls either
+   side of a large "From" / "→ To" label. Each month reads as plain text
+   with a small muted chevron, not a boxed native-looking <select>. */
+.fromto{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--color-line);border-radius:9px;padding:6px 12px;box-shadow:var(--shadow-card)}
+.fromto .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-tx-3);font-weight:700}
+.fromto .arrow{color:var(--color-tx-3);font-size:12px;margin:0 2px}
+.fromto .sel{border:0;background:transparent;box-shadow:none;padding:2px 16px 2px 2px;font:inherit;font-size:12.5px;font-weight:600;color:var(--color-tx);cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238A978F' fill='none' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right center;background-size:9px}
+.seg{display:inline-flex;background:#fff;border:1px solid var(--color-line);border-radius:9px;padding:3px;box-shadow:var(--shadow-card)}
+.seg button{border:0;background:transparent;padding:6px 13px;border-radius:6px;font:inherit;font-size:12.5px;font-weight:500;color:var(--color-tx-2);cursor:pointer;transition:.15s}
+.seg button.on{background:var(--color-green);color:#fff}
+.pill{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--color-line);border-radius:9px;padding:8px 12px;font-size:12px;color:var(--color-tx-2);box-shadow:var(--shadow-card)}
+.pill b{color:var(--color-tx);font-weight:600}.pill .live{width:7px;height:7px;border-radius:50%;background:var(--color-mint);box-shadow:0 0 0 3px var(--color-green-soft);animation:pulse-dot 2.4s ease-in-out infinite}
+.hero{position:relative;border-radius:18px;overflow:hidden;margin-bottom:18px;background:radial-gradient(120% 140% at 88% -20%,rgba(63,163,120,.55) 0%,rgba(30,90,62,0) 55%),linear-gradient(120deg,var(--color-hero-a),var(--color-hero-b) 60%,var(--color-hero-c));box-shadow:var(--shadow-lift)}
+.hero:before{content:"";position:absolute;inset:0;background:radial-gradient(60% 90% at 15% 120%,rgba(201,146,46,.18),transparent 60%);pointer-events:none}
+/* gap matches .hstats's own 14px exactly, and the right padding is cut to the
+   same 14px, so the sparkline (filling the whole right column) sits the same
+   distance from the AVG PRICE tile as from the card's own right edge —
+   sales-fixes/nav-and-cleanup-prompt.md "equal gutters" requirement. */
+.hero-in{position:relative;display:grid;grid-template-columns:1fr 1.05fr;gap:14px;padding:26px 14px 26px 30px}
+.hero .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--color-hero-tx);font-weight:600}
+.hero .big{font-size:56px;font-weight:600;color:#fff;line-height:1;margin:12px 0 0;letter-spacing:-.02em}
+.hero .under{display:flex;align-items:center;gap:12px;margin-top:14px}
+.hero .asof{font-size:12px;color:var(--color-hero-tx)}
+.hstats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+.hstat{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:12px 14px;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.hstat .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--color-hero-tx);font-weight:600;display:flex;align-items:center;gap:5px}
+.hstat .v{font-size:20px;font-weight:600;color:#fff;margin-top:5px}.hstat .v small{font-size:12px;color:#B7CFC4;font-weight:500}
+.hstat .v.pos{color:#E9C77E}.hstat .v.neg{color:#F0B4A4}
+/* MoM pill, under the headline on the same line as the date range — back
+   here per explicit instruction (sales-header-restyle-prompt.md). Green for
+   positive, the existing negative colour/▼ for negative. */
+.hero .delta{font-size:12.5px;font-weight:600;padding:4px 10px;border-radius:20px;background:rgba(63,163,120,.22);color:#9FE3C1;display:inline-flex;gap:5px;align-items:center;border:1px solid rgba(63,163,120,.35);white-space:nowrap}
+.hero .delta.down{background:rgba(181,70,47,.2);color:#F0B4A4;border-color:rgba(181,70,47,.4)}
+.dtag{font-size:8.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#E9C77E;background:rgba(201,146,46,.18);padding:1px 5px;border-radius:4px;border:1px solid rgba(201,146,46,.3)}
+/* EstimateTag — marks a figure the system derived rather than measured.
+   Same shape as .dtag but for light card backgrounds (solid gold tokens
+   instead of .dtag's translucent dark-hero variant). Not yet composed into
+   any card. */
+.est-tag{font-size:8.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--color-gold-ink);background:var(--color-gold-soft);padding:1px 5px;border-radius:4px;border:1px solid var(--color-gold-line)}
+.level{display:flex;align-items:center;gap:10px;margin:24px 2px 12px}
+.level .n{font-family:'IBM Plex Mono';font-size:11px;font-weight:500;color:#fff;background:linear-gradient(135deg,var(--color-green),var(--color-green-d));width:20px;height:20px;border-radius:6px;display:grid;place-items:center;box-shadow:0 3px 8px -3px rgba(18,92,63,.7)}
+.level .t{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--color-tx-3);font-weight:600}
+.level .src{font-size:10.5px;color:var(--color-tx-3);font-weight:500;background:#fff;border:1px solid var(--color-line);border-radius:20px;padding:3px 10px}
+.level .ln{flex:1;height:1px;background:linear-gradient(90deg,var(--color-line),transparent)}
+.period{background:var(--color-card);border:1px solid var(--color-line);border-radius:16px;box-shadow:var(--shadow-card);padding:18px 20px}
+.period-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.period-h .t{font-size:14px;font-weight:600}.period-h .hint{font-weight:500;color:var(--color-tx-3);font-size:12px}
+.period-h .lg{display:flex;gap:14px;font-size:11px;color:var(--color-tx-2)}.period-h .lg i{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:-1px}
+.period-grid{display:grid;grid-template-columns:1.12fr 1fr;gap:24px;align-items:stretch}
+.chart{position:absolute;inset:0;width:100%;height:100%;display:block}
+.chart .bar{transform-box:fill-box;transform-origin:bottom;pointer-events:none}
+/* The bar itself takes no pointer events — the foreignObject button in front
+   of it is the real hit target (an SVG <rect> can't be a semantic button) —
+   so its hover brightness is driven by that sibling button being hovered. */
+.chart foreignObject:hover + .bar{filter:brightness(1.08)}
+.chart .bl{font-family:'IBM Plex Mono';fill:var(--color-tx-3);font-size:9px}.chart .vl{font-family:'Space Grotesk';fill:var(--color-tx-2);font-size:9px;font-weight:600}
+.chart .bl.yr{font-size:7.5px;opacity:.7}
+.mlist{border-left:1px solid var(--color-line-2);padding-left:22px;overflow:auto;max-height:236px}
+.mlist .caphdr{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-tx-3);font-weight:700;padding:0 8px 6px}
+.mlist{container-type:inline-size}
+/* B2B/B2C | Other | MoM: fixed column widths + tabular numerals so figures align down every row */
+.mhead{position:sticky;top:0;z-index:3;background:var(--color-card);padding-bottom:4px}
+.mhead .caphdr{padding-bottom:4px}.mhead .caphdr .help-ico{vertical-align:1px;margin-left:3px;text-transform:none}
+.mcols,.mrow{display:grid;grid-template-columns:52px minmax(0,1fr) 58px 54px 64px;column-gap:8px;align-items:center}
+.mcols{padding:0 8px;font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-tx-3);font-weight:700;text-align:right}
+.mrow{padding:7px 8px;border-radius:9px;cursor:pointer;transition:.14s;width:100%;border:0;background:transparent;font:inherit;text-align:left}
+.mrow:hover{background:var(--color-green-soft);transform:translateX(2px)}
+.mrow .mo{font-size:12px;font-weight:600}.mrow .mo small{display:block;font-size:9.5px;color:var(--color-tx-3);font-weight:500;font-family:'IBM Plex Mono'}
+.mrow .track{height:6px;background:var(--color-line-2);border-radius:4px;overflow:hidden}
+.mrow .fill{height:100%;background:linear-gradient(90deg,var(--color-mint),var(--color-green));border-radius:4px;transform-origin:left;animation:grow-x .8s cubic-bezier(.2,.8,.3,1) both}
+.mrow.y25 .fill{background:#C4D6CC}
+.mrow .v,.mrow .o,.mrow .d{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.mrow .v{font-size:12.5px;font-weight:600}
+.mrow .o{font-size:11.5px;font-weight:400;color:var(--color-tx-3)}
+.mrow .d{font-size:11px;font-weight:500}
+.mrow .d.up{color:var(--color-green-d)}.mrow .d.down{color:var(--color-clay)}.mrow .d.flat{color:var(--color-tx-3)}
+/* narrow list: the bar track shrinks first (it is the flexible column), then goes, leaving the three value columns intact */
+@container (max-width:330px){.mcols,.mrow{grid-template-columns:48px minmax(0,1fr) 56px 52px 62px;column-gap:6px}}
+@container (max-width:290px){.mcols,.mrow{grid-template-columns:48px 56px 52px 62px;column-gap:6px}.mrow .track,.mcols .c-bar{display:none}}
+.grid{display:grid;grid-template-columns:1.3fr 1fr 1.05fr;gap:15px}
+/* Same minmax(auto, 1fr) gotcha as .app > .main, one level deeper: without
+   this, the breakdown tables' own intentional horizontal scroll (.btbl-wrap)
+   can't actually contain itself — the grid column grows to fit the full
+   unscrolled table width instead, and that overflow reaches the page. */
+.grid > *{min-width:0}
+/* Two equal columns — matches the production Sales page's own row pairing:
+   product+customer tables in one row, margin+donut in the next, each
+   lg:grid-cols-2. Replaces the old three-tile .grid for those two rows. */
+.grid2{grid-template-columns:1fr 1fr}
+.tile{background:var(--color-card);border:1px solid var(--color-line);border-radius:16px;box-shadow:var(--shadow-card);display:flex;flex-direction:column;overflow:hidden;min-height:352px;position:relative;transition:.2s}
+.tile.live:hover{box-shadow:var(--shadow-lift);transform:translateY(-3px);border-color:#CFDDD6}
+.tile-h{padding:15px 17px 13px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;border-bottom:1px solid var(--color-line-2)}
+.tile-h .t{font-size:14px;font-weight:600}.tile-h .d{font-size:11.5px;color:var(--color-tx-3);margin-top:2px}
+.tile-body{padding:6px 8px 8px;flex:1;overflow:auto}
+.compbar{display:flex;height:9px;border-radius:5px;overflow:hidden;margin:11px 10px 4px}.compbar span{height:100%;transform-origin:left;animation:grow-x .9s cubic-bezier(.2,.8,.3,1) both}
+.row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:9px 9px;border-radius:9px;transition:.13s;cursor:pointer;width:100%;border:0;background:transparent;font:inherit;text-align:left}.row:hover{background:var(--color-green-soft)}
+.row .nm{font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .nm .dotc{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:7px;vertical-align:0}
+.row .nm .code{color:var(--color-tx-3);font-size:10.5px;margin-right:7px}
+.row .rt{text-align:right}.row .rt .v{font-size:12.5px;font-weight:600}.row .sub{font-size:10.5px;color:var(--color-tx-3);margin-top:1px}
+/* This app's own convention, kept deliberately — an explicit, earlier design
+   decision for THIS dashboard specifically: contribution margin's colour is
+   its own sign, not a magnitude, so it reads as orange-positive/red-negative
+   rather than the generic Badge primitive's green-positive below, and it's
+   plain text with no pill background. Named separately from .badge so the
+   two don't collide now that .badge is the production primitive. */
+.cm-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;font-family:var(--font-display);font-feature-settings:"tnum" 1;letter-spacing:-.015em;background:none}
+.cm-badge.pos{color:var(--color-gold)}.cm-badge.neg{color:var(--color-clay)}
+/* Shares its cell with the est-tag "?" (assumed-$0 rows) — a touch smaller
+   so the "?" always has room and is never clipped by the column. */
+.cm-badge.compact{font-size:8.5px;padding:2px 4px}
+
+/* Badge — the production primitive. A generic magnitude/status indicator:
+   pos = green-soft/green-d, neg = clay-soft/clay, mid = gold-soft/#9A6E1E.
+   Not yet used anywhere (Phase 3 — primitives, nothing composed yet); Phase 4
+   wires it into whichever cards need a generic good/bad/uncertain pill,
+   distinct from the contribution-margin-specific .cm-badge above. */
+.badge{font-family:var(--font-display);font-feature-settings:"tnum" 1;letter-spacing:-.015em;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px}
+.badge.pos{background:var(--color-green-soft);color:var(--color-green-d)}
+.badge.neg{background:var(--color-clay-soft);color:var(--color-clay)}
+.badge.mid{background:var(--color-gold-soft);color:#9A6E1E}
+
+/* Note — inset box, two tones. Distinct from this app's existing ad-hoc note
+   boxes (.qnote, .mg-note, .insight, .grain), which stay as they are until
+   each card that uses them is rebuilt in Phase 4; this is the primitive
+   those rebuilds will converge onto. Not yet composed into any card. */
+.note{margin:13px 15px;font-size:11px;border:1px solid;border-radius:8px;padding:8px 11px;line-height:1.5}
+.note.gold{background:var(--color-gold-soft);border-color:var(--color-gold-line);color:var(--color-gold-ink)}
+.note.green{background:var(--color-green-soft);border-color:#CBD8D1;color:var(--color-green-d)}
+
+/* Skeleton / PanelSkeleton — a loading panel holds its height (default
+   352px, matching .tile's own min-height) so the page doesn't jump when
+   real content replaces it. Not yet composed into any card. */
+.skeleton{background:var(--color-line-2);border-radius:6px;animation:skeleton-pulse 1.6s ease-in-out infinite}
+@keyframes skeleton-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.panel-skeleton{padding:17px;display:flex;flex-direction:column;gap:12px}
+.panel-skeleton .sk-row{display:flex;flex-direction:column;gap:10px;padding-top:4px}
+
+/* ErrorState — a 403 is not a failure, it's the permission model working;
+   it gets its own wording so nobody files a bug about a dashboard that is
+   behaving correctly. Not yet composed into any card. */
+.error-state{padding:24px;text-align:center}
+.error-state .t{font-size:14px;font-weight:600;margin-bottom:6px}
+.error-state .d{font-size:12.5px;color:var(--color-tx-2);max-width:380px;margin:0 auto}
+.error-state .retry{margin-top:14px;border:1px solid var(--color-line);background:var(--color-card);border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s}
+.error-state .retry:hover{background:var(--color-green-soft);border-color:#CBD8D1;color:var(--color-green-d)}
+
+/* EmptyState — an invitation to act, not an apology. Not yet composed into
+   any card. */
+/* Coming soon — one shared page for every "soon" module (nav-and-cleanup-
+   prompt.md §2); content is swapped in by JS from the MODULES config. */
+.soon-page{max-width:420px;margin:80px auto;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px}
+.soon-ico{width:72px;height:72px;border-radius:50%;background:var(--color-green-soft);display:grid;place-items:center;color:var(--color-green-d)}
+.soon-ico svg{width:34px;height:34px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.soon-page h2{margin:0;font-size:19px;font-weight:600;color:var(--color-tx)}
+.soon-page p{margin:0;font-size:13px;color:var(--color-tx-2);line-height:1.55}
+.empty-state{padding:32px;text-align:center}
+.empty-state .t{font-size:14px;font-weight:600;margin-bottom:4px}
+.empty-state .d{font-size:12.5px;color:var(--color-tx-2);max-width:380px;margin:0 auto}
+.mg-hero{padding:18px 17px 6px;display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap}
+.mg-hero .kpi{display:flex;flex-direction:column}
+.mg-hero .pcrow{display:flex;align-items:center;gap:7px}
+.mg-hero .pct{font-size:38px;font-weight:600;line-height:.9}
+.mg-hero .pct.pos{color:var(--color-gold)}.mg-hero .pct.neg{color:var(--color-clay)}
+.mg-hero .pcrow .help-ico{margin-left:0}
+.mg-hero .pct-sub{font-size:12px;color:var(--color-tx-2);font-weight:600;margin-top:6px}
+.mg-hero .side{padding-bottom:4px}.mg-hero .side .l{font-size:10.5px;color:var(--color-tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.mg-hero .side .v{font-size:15px;font-weight:600;margin-top:2px}.mg-hero .side .v .j{display:block;font-size:11px;color:var(--color-tx-3);font-weight:500}
+.wf{padding:8px 17px 18px}
+.wfrow{display:grid;grid-template-columns:84px 1fr auto;gap:10px;align-items:center;padding:6px 0}
+.wfrow .wl{font-size:11.5px;color:var(--color-tx-2)}
+.wfrow.tot .wl{font-weight:700;color:var(--color-tx)}
+.wfrow .wt{height:9px;border-radius:3px;background:var(--color-line-2);position:relative;overflow:hidden}
+.wfrow .wf-fill{position:absolute;top:0;height:100%;border-radius:3px;transform-origin:left;animation:grow-x .9s both}
+.wfrow .wv{font-size:11.5px;font-weight:600;text-align:right;white-space:nowrap}.wfrow .wv .j{display:block;font-size:10px;color:var(--color-tx-3);font-weight:500}
+.wf-div{height:1px;background:var(--color-line);margin:4px 0 6px}
+.contrib{display:grid;grid-template-columns:.85fr 1.15fr;gap:15px}
+.cbox{background:var(--color-card);border:1px solid var(--color-line);border-radius:16px;box-shadow:var(--shadow-card);overflow:hidden}
+.cbox .hd{padding:15px 17px 12px;border-bottom:1px solid var(--color-line-2)}.cbox .hd .t{font-size:14px;font-weight:600}.cbox .hd .d{font-size:11.5px;color:var(--color-tx-3);margin-top:2px}
+.donutwrap{display:flex;align-items:center;gap:12px;padding:14px 16px}
+.donut{width:172px;height:172px;flex:none}.donut .seg{cursor:pointer;transition:.15s}.donut .seg:hover{opacity:.82}
+.dlegend{flex:1;overflow:auto;max-height:184px}
+.dl{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;padding:5px 6px;border-radius:7px;cursor:pointer;transition:.12s;width:100%;border:0;background:transparent;font:inherit;text-align:left}.dl:hover{background:var(--color-green-soft)}
+.dl .sw{width:9px;height:9px;border-radius:2px}.dl .nm{font-size:11.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dl .pc{font-size:11.5px;font-weight:600;font-family:'Space Grotesk'}
+.prof-body{padding:6px 8px 10px;max-height:340px;overflow:auto}
+/* The totals row must survive this card's own vertical scroll the same way
+   the two BreakdownTables' totals rows do — it previously sat as a plain
+   last <tbody> row (no <tfoot>, no sticky), so it scrolled away with the
+   line items instead of staying pinned to the bottom. */
+#profTbl tfoot{position:sticky;bottom:0;z-index:2}
+#profTbl thead{position:sticky;top:0;z-index:2}
+#profTbl thead th{background:var(--color-card);box-shadow:inset 0 -1px 0 var(--color-line);border-bottom:0}
+#profTbl tfoot td{background:#FAFCFB;border-top:0;box-shadow:inset 0 2px 0 var(--color-green)}
+.prow{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:center;padding:9px 10px;border-radius:9px;cursor:pointer;transition:.13s}.prow:hover{background:var(--color-green-soft)}
+.prow .nm{font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.prow .nm .dotc{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:7px}
+.prow .rev{font-size:12px;font-weight:600;text-align:right;white-space:nowrap;min-width:58px}
+.prow-h{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;padding:8px 10px 4px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-tx-3);font-weight:700}.prow-h span:not(:first-child){text-align:right;min-width:58px}
+.scrim{position:fixed;inset:0;background:rgba(12,22,19,.44);opacity:0;pointer-events:none;transition:.24s;z-index:40;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}.scrim.show{opacity:1;pointer-events:auto}
+.drill{position:fixed;top:0;right:0;height:100vh;width:min(600px,96vw);background:var(--color-canvas);box-shadow:-30px 0 70px -28px rgba(12,22,19,.5);transform:translateX(101%);transition:transform .3s cubic-bezier(.4,0,.15,1);z-index:50;display:flex;flex-direction:column;outline:none}.drill.show{transform:translateX(0)}
+.drill-h{background:linear-gradient(180deg,#fff,#FAFCFB);border-bottom:1px solid var(--color-line);padding:18px 20px}
+.drill-h .top{display:flex;justify-content:space-between;align-items:flex-start}
+.drill-h .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--color-green-d);font-weight:700}.drill-h h3{margin:6px 0 0;font-size:20px;font-weight:600}
+.close{border:1px solid var(--color-line);background:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;color:var(--color-tx-2);display:grid;place-items:center;transition:.15s}.close:hover{background:var(--color-green-soft);color:var(--color-green-d);transform:rotate(90deg)}
+.drill-stats{display:flex;gap:22px;margin-top:14px;flex-wrap:wrap}
+.drill-stats .s .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-tx-3);font-weight:600}.drill-stats .s .v{font-size:18px;font-weight:600;margin-top:2px}
+.hd-cols{display:grid;grid-template-columns:1fr;gap:16px;align-items:stretch}
+.hd-cols:has(.drill-card:not([hidden])){grid-template-columns:minmax(0,45fr) minmax(0,55fr)}
+.hd-left{min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.drill-h .hd-left .grain{margin-top:auto}
+.drill-h .hd-left .drill-stats{margin-bottom:10px}
+.drill-h .hd-left .drill-stats{display:grid;grid-template-columns:repeat(3,minmax(0,auto));gap:10px 18px;margin-top:10px;justify-content:start}
+.drill-h .hd-left .drill-stats .s .l{font-size:9.5px}
+.drill-h .hd-left .drill-stats .s .v{font-size:14.5px;line-height:1.25;margin-top:1px;white-space:nowrap}
+.drill-card{display:flex;flex-direction:column;justify-content:space-between;background:#fff;border:1px solid var(--color-line);border-radius:10px;padding:10px 0 6px;margin-top:6px}
+.drill-card[hidden]{display:none}
+.drill-card .t{font-size:12px;font-weight:700;padding:0 14px}.drill-card .d{font-size:10.5px;color:var(--color-tx-3);padding:0 14px}
+.drill-card .mg-hero{padding:8px 14px 0;gap:16px;flex-wrap:nowrap;justify-content:space-between}.drill-card .mg-hero .pct{font-size:28px}
+.drill-card .wf{padding:4px 14px 6px}.drill-card .wfrow{grid-template-columns:56px 1fr auto;padding:3px 0}
+@media(max-width:560px){.hd-cols:has(.drill-card:not([hidden])){grid-template-columns:1fr}.drill-card{margin-top:0}}
+.grain{display:inline-flex;align-items:center;gap:7px;margin-top:14px;background:var(--color-gold-soft);border:1px solid var(--color-gold-line);border-radius:8px;padding:7px 11px;font-size:11.5px;color:var(--color-gold-ink)}
+.crumb{padding:10px 20px 0;font-size:11.5px;color:var(--color-tx-2);display:flex;align-items:center;gap:6px;flex-wrap:wrap}.crumb b{color:var(--color-green-d)}.crumb .step{cursor:pointer;color:var(--color-green-d);font-weight:600}
+.drill-tools{padding:12px 20px;display:flex;gap:9px;align-items:center;background:var(--color-canvas);border-bottom:1px solid var(--color-line)}
+.search{flex:1;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--color-line);border-radius:9px;padding:8px 11px}.search input{border:0;outline:0;font:inherit;font-size:13px;width:100%;background:transparent}
+.btn{border:1px solid var(--color-line);background:#fff;border-radius:9px;padding:8px 13px;font:inherit;font-size:12.5px;font-weight:600;color:var(--color-tx);cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.15s}.btn:hover{background:var(--color-green-soft);border-color:#CBD8D1;color:var(--color-green-d)}
+.drill-body{flex:1;overflow:auto;padding:8px 14px 30px}
+.mixhdr{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-tx-3);font-weight:700;padding:12px 12px 4px;display:flex;justify-content:space-between}
+.monthrow{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;background:#fff;border:1px solid var(--color-line);border-radius:11px;padding:11px 13px;margin:7px 6px;cursor:pointer;transition:.13s}.monthrow:hover{border-color:#CBD8D1;background:var(--color-green-soft);transform:translateX(2px)}
+.monthrow .mtag{position:relative;text-align:center;background:var(--color-green-soft);border-radius:9px;padding:6px 9px;min-width:58px}.monthrow .mtag .mo{font-size:11px;color:var(--color-green-d);font-weight:700}.monthrow .mtag .yr{font-size:10px;color:var(--color-tx-3);font-family:'IBM Plex Mono'}
+.monthrow .mid .u{font-size:11px;color:var(--color-tx-2)}.monthrow .amt{text-align:right}.monthrow .amt .v{font-size:14px;font-weight:600}.monthrow .amt .c{font-size:10px;color:var(--color-tx-3)}
+.doc{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;background:#fff;border:1px solid var(--color-line);border-radius:10px;padding:10px 13px;margin:6px 6px;transition:.13s}.doc:hover{border-color:#CBD8D1}
+.doc .dt{text-align:center;background:#F1F5F3;border-radius:8px;padding:5px 8px;min-width:50px}.doc .dt .d{font-size:15px;font-weight:600;line-height:1}.doc .dt .mo{font-size:9px;color:var(--color-tx-3);font-weight:700;text-transform:uppercase}
+.doc .mid .rf{font-size:12.5px;font-weight:600;font-family:'IBM Plex Mono'}.doc .mid .sub{font-size:11px;color:var(--color-tx-2);margin-top:2px}
+.doc .amt{text-align:right}.doc .amt .v{font-size:13.5px;font-weight:600}.doc .amt .q{font-size:10.5px;color:var(--color-tx-3);margin-top:2px}
+.drill-count{font-size:11.5px;color:var(--color-tx-2);padding:6px 12px}
+.pl{margin:6px;background:#fff;border:1px solid var(--color-line);border-radius:12px;overflow:hidden}
+.plr{display:grid;grid-template-columns:1fr auto auto auto;gap:12px;padding:10px 14px;border-bottom:1px solid var(--color-line-2);font-size:12.5px;align-items:center}.plr:last-child{border-bottom:0}
+.plr.head{background:#FAFCFB;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--color-tx-3);font-weight:700}
+.plr.total{background:var(--color-green-soft);font-weight:700}.plr.total.neg-t{background:var(--color-clay-soft)}
+.plr .rlbl{font-weight:500}.plr .rv{text-align:right;font-weight:600;white-space:nowrap;min-width:74px}.plr .rj{text-align:right;color:var(--color-tx-2);font-size:11.5px;white-space:nowrap;min-width:64px}.plr .rp{text-align:right;color:var(--color-tx-3);font-size:10.5px;white-space:nowrap;min-width:40px}
+.neg{color:var(--color-clay)}
+.insight{margin:10px 6px;background:linear-gradient(120deg,#FBF3E3,#F7EEDC);border:1px solid var(--color-gold-line);border-radius:11px;padding:12px 14px;font-size:12px;color:var(--color-gold-ink);line-height:1.55}
+/* Order<->batch flow diagram (mo-drilldown-prompt.md §3, several<->several
+   case only) — orders left, batches right, lines sized by quantity. */
+.linkflow{margin-top:8px}
+.lf-lbl{font-family:var(--font-mono);font-size:9.5px;fill:var(--color-tx-2)}
+.lf-lbl.hot{fill:var(--color-green-d);font-weight:700}
+.qnote{margin:8px 6px;font-size:11px;color:var(--color-tx-2);background:#F1F5F3;border:1px solid var(--color-line);border-radius:9px;padding:8px 11px;line-height:1.5}
+@media(max-width:1080px){.app{grid-template-columns:1fr}.rail{display:none}.hero-in{grid-template-columns:1fr;gap:18px;padding:26px 30px}.hero .big{font-size:44px}.grid{grid-template-columns:1fr}.period-grid{grid-template-columns:1fr}.contrib{grid-template-columns:1fr}.mlist{border-left:0;border-top:1px solid var(--color-line-2);padding-left:0;padding-top:12px;max-height:320px}.donutwrap{flex-direction:column}}
+/* Keyboard focus stays visible everywhere — the prototype had no keyboard
+   path at all; every drill-down was a click handler on a div (see
+   aif-localhost-reskin-prompt.md's "everything clickable is a real button"
+   rule, addressed card by card from Phase 3 onward). */
+:focus-visible{outline:2px solid var(--color-mint);outline-offset:2px;border-radius:4px}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:.01ms!important;
+  }
+}
+
+/* ===== Extensions for contribution margin, source switching and governance ===== */
+.srcbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--color-card);border:1px solid var(--color-line);border-radius:12px;padding:10px 14px;margin-bottom:14px;box-shadow:var(--shadow-card)}
+.srcbar .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--color-tx-3);font-weight:700}
+.srcbar .meta{font-size:11.5px;color:var(--color-tx-2)}.srcbar .meta b{color:var(--color-tx)}
+.srcbar .spacer{flex:1}
+.conn{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:20px}
+.conn.ok{background:var(--color-green-soft);color:var(--color-green-d)}.conn.bad{background:var(--color-clay-soft);color:var(--color-clay)}
+.conn.wait{background:var(--color-gold-soft);color:#9A6E1E}
+.conn i{width:7px;height:7px;border-radius:50%;background:currentColor}
+.sel{background:#fff;border:1px solid var(--color-line);border-radius:9px;padding:7px 10px;font:inherit;font-size:12.5px;color:var(--color-tx);cursor:pointer}
+.banner{border-radius:12px;padding:11px 14px;font-size:12px;line-height:1.55;margin-bottom:14px;border:1px solid}
+.banner.warn{background:var(--color-gold-soft);border-color:var(--color-gold-line);color:var(--color-gold-ink)}
+.banner.bad{background:var(--color-clay-soft);border-color:#EBCFC7;color:#8A3A26}
+.banner.info{background:var(--color-green-soft);border-color:#CFE3D8;color:var(--color-green-d)}
+.banner b{font-weight:700}
+.cov{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--color-gold-soft);color:#9A6E1E;font-family:var(--font-display);font-feature-settings:"tnum" 1;letter-spacing:-.015em}
+.cov.full{background:var(--color-green-soft);color:var(--color-green-d)}
+/* Sales by customer card only, on request: smaller, plain text, no pill
+   background — the colour (gold/green per state) still carries the
+   coverage/assumed signal, just without the badge chrome. */
+.cov-sm{font-size:9px;font-weight:600;padding:0;background:none}
+.cov-sm.full,.cov-sm.assumed{background:none}
+
+/* "?" help icon — one shared trigger for every popover on the dashboard
+   (column headers and the per-row assumed-$0 marker alike). Stays
+   highlighted while its popover is open via aria-expanded, same signal the
+   JS reads to know which trigger owns the open popover. */
+.help-ico{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--color-line);
+  background:#fff;color:var(--color-tx-3);font:inherit;font-size:9.5px;font-weight:700;line-height:1;cursor:pointer;padding:0;
+  margin-left:3px;vertical-align:1px;transition:.15s}
+.help-ico:hover{background:var(--color-green-soft);border-color:#CBD8D1;color:var(--color-green-d)}
+.help-ico:active,.help-ico[aria-expanded="true"]{background:var(--color-green);border-color:var(--color-green);color:#fff}
+.help-ico:focus-visible{outline:2px solid var(--color-mint);outline-offset:2px}
+th .help-ico{text-transform:none;letter-spacing:0;font-weight:700}
+
+/* The assumed-$0 marker is a help-icon trigger too now (its wording is
+   unchanged — only the hover-title was promoted into a real, keyboard-
+   reachable popover), so it keeps the EstimateTag chip look rather than
+   the plain round "?" the column-header triggers use. */
+.est-tag{display:inline-flex;align-items:center;font-size:8.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--color-gold-ink);background:var(--color-gold-soft);padding:1px 5px;border-radius:4px;border:1px solid var(--color-gold-line);
+  cursor:pointer;transition:.15s}
+.est-tag:hover{background:#F2E4C6}
+.est-tag:active,.est-tag[aria-expanded="true"]{background:var(--color-gold-ink);border-color:var(--color-gold-ink);color:#fff}
+.est-tag:focus-visible{outline:2px solid var(--color-mint);outline-offset:2px}
+
+/* Popover — one reusable node, repositioned per trigger rather than one
+   instance per icon. Visual language borrowed directly from the existing
+   .dotwrap .tip (card chrome, --shadow-lift, same radius), since that's
+   already this dashboard's "hover-info card" convention. */
+.popover{position:fixed;width:320px;max-width:min(320px,92vw);background:#fff;border:1px solid var(--color-line);border-radius:12px;
+  box-shadow:var(--shadow-lift);padding:14px 16px;z-index:200;opacity:0;transform:scale(.96);transform-origin:var(--pop-origin-x,50%) var(--pop-origin-y,0%);
+  transition:opacity .15s ease,transform .15s ease}
+.popover.show{opacity:1;transform:scale(1)}
+.popover[hidden]{display:none}
+.pop-close{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:6px;border:0;background:transparent;
+  color:var(--color-tx-3);cursor:pointer;display:grid;place-items:center;font-size:12px;transition:.15s}
+.pop-close:hover{background:var(--color-green-soft);color:var(--color-green-d)}
+.pop-title{font-size:12.5px;font-weight:700;color:var(--color-tx);padding-right:20px}
+.pop-body{font-size:12px;color:var(--color-tx-2);line-height:1.55;margin-top:6px}
+.pop-rows{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.pop-rows:empty{display:none;margin:0}
+.pop-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:11.5px}
+.pop-row .rl{color:var(--color-tx-2)}
+.pop-row .rv{font-weight:700;color:var(--color-tx);font-family:var(--font-display);font-feature-settings:"tnum" 1}
+.pop-row.warn .rl,.pop-row.warn .rv{color:var(--color-gold-ink)}
+.pop-foot{margin-top:7px;font-size:10.5px;color:var(--color-tx-3);line-height:1.5}
+.pop-foot:empty{display:none;margin:0}
+.pop-formula{display:inline-block;margin-top:9px;font-family:var(--font-mono);font-size:11px;color:var(--color-green-d);
+  background:var(--color-green-soft);border:1px solid #CFE3D8;border-radius:7px;padding:5px 9px;line-height:1.4}
+.pop-formula:empty{display:none;margin:0}
+.pop-tip{margin-top:9px;font-size:11px;color:var(--color-tx-2);background:#F1F5F3;border:1px solid var(--color-line);border-radius:7px;
+  padding:7px 9px;line-height:1.5}
+.pop-tip:empty{display:none;margin:0}
+.pop-arrow{position:absolute;width:11px;height:11px;background:#fff;border:1px solid var(--color-line);transform:rotate(45deg);
+  border-radius:2px}
+.popover.arrow-top .pop-arrow{top:-6px;border-right:0;border-bottom:0}
+.popover.arrow-bottom .pop-arrow{bottom:-6px;border-left:0;border-top:0}
+.pop-scrim{position:fixed;inset:0;background:transparent;z-index:190;display:none}
+.pop-scrim[hidden]{display:none}   /* the mobile rule below sets display:block, which would otherwise override [hidden] and leave an invisible layer swallowing taps */
+@media(prefers-reduced-motion:reduce){.popover{transition:none}}
+/* Mobile — a compact bottom sheet instead of an anchored card: the JS skips
+   computing top/left/arrow placement once this media query is active, so
+   it never fights the fixed positioning below. */
+@media(max-width:640px){
+  .popover{left:10px!important;right:10px!important;width:auto;max-width:none;bottom:max(10px,env(safe-area-inset-bottom))!important;top:auto!important;
+    border-radius:16px;transform:translateY(calc(100% + 24px));transform-origin:center}
+  .popover.show{transform:translateY(0)}
+  .pop-arrow{display:none}
+  .pop-scrim{display:block;background:rgba(18,33,28,.28)}
+}
+
+/* Frozen first column — sticky across header, body and footer alike, with a
+   solid background per row state (default/hover/total) so scrolled cells
+   never show through it, and a shadow that only appears once the wrap has
+   actually been scrolled (toggled on .btbl-wrap.scrolled by the JS). */
+.btbl .frz{position:sticky;left:0;z-index:3;background:var(--color-card);white-space:nowrap}
+.btbl thead .frz{z-index:4}
+.btbl tbody tr:hover .frz{background:var(--color-green-soft)}
+.btbl tr.tot .frz{background:var(--color-card)}
+.btbl-wrap.scrolled .frz{box-shadow:4px 0 8px -4px rgba(12,22,19,.18)}
+/* Never truncated — the column is sized (in JS) to the longest name's own
+   measured width, so the next column starts right after the full text. */
+.btbl .frz .rowbtn{display:block;max-width:100%;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btbl .frz .rowbtn>span,.btbl .frz .sub{white-space:nowrap}
+.btbl .frz .sub{overflow:hidden;text-overflow:ellipsis}
+.btbl td.num{font-variant-numeric:tabular-nums}
+.btbl tfoot td,.btbl tfoot td.frz{vertical-align:middle;line-height:1.3;height:34px}
+/* Fade hint — more columns (CM%, Coverage) sit just past the visible edge;
+   the hint disappears once scrolled all the way to the end. */
+.btbl-wrap{position:relative}
+.btbl-wrap::after{content:'';position:absolute;top:0;right:0;bottom:0;width:28px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.95));opacity:1;transition:opacity .15s}
+.btbl-wrap.at-end::after{opacity:0}
+.na{color:var(--color-tx-3);font-style:italic;font-weight:500}
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-tx-3);font-weight:700;text-align:right;padding:8px 10px;border-bottom:1px solid var(--color-line);white-space:nowrap}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl td{padding:9px 10px;border-bottom:1px solid var(--color-line-2);text-align:right;white-space:nowrap}
+.tbl tbody tr{cursor:pointer;transition:.12s}.tbl tbody tr:hover{background:var(--color-green-soft)}
+/* The name cell's own button is the actual interactive target (a <tr> can't
+   be a semantic button) — reset it to read as table-cell text, not a button,
+   until the row beneath it is hovered/focused. */
+.rowbtn{display:block;width:100%;border:0;background:transparent;font:inherit;text-align:left;padding:0;cursor:pointer}
+.rowbtn:focus-visible{outline-offset:2px}
+.tbl tr.tot{background:#FAFCFB;font-weight:700}.tbl tr.tot td{border-bottom:0}
+.tbl .sub{font-size:10.5px;color:var(--color-tx-3);font-weight:500}
+
+/* BreakdownTable — the production primitive's Month|YTD split table (Sales
+   by product/customer). A sticky header and total row, a hairline between
+   the two measure groups so the eye tracks which Month/YTD column belongs
+   to which measure, and the Total row reads as the summary via a 2px green
+   rule rather than blending into the last data row. */
+.btbl-wrap{overflow:auto;max-height:460px}
+/* .tbl's own width:100% would otherwise force every column to squeeze down
+   to fit, rather than the table growing past its wrapper and the wrapper's
+   own overflow:auto producing a real horizontal scrollbar. */
+.btbl{width:auto;min-width:100%;table-layout:fixed}
+.btbl th,.btbl td{overflow:hidden}
+.btbl thead{position:sticky;top:0;background:var(--color-card);z-index:2}
+.btbl .bt-group{text-align:center;background:linear-gradient(180deg,var(--color-green-soft),transparent);color:var(--color-green-d);border-left:1px solid var(--color-line-2)}
+.btbl .bt-sub{border-left:1px solid var(--color-line-2)}
+.btbl tfoot{position:sticky;bottom:0;z-index:2}
+.btbl tr.tot td{border-top:2px solid var(--color-green)}
+.btbl td b{font-weight:700;color:var(--color-tx)}
+.btbl td.muted{color:var(--color-tx-3)}
+/* Sticky header + Total row: sit above the frozen first-column body cells (z 3),
+   with every cell opaque so no row shows through. */
+.btbl thead,.btbl tfoot{z-index:6}
+.btbl thead th{background-color:var(--color-card)}
+.btbl thead .bt-group{background:linear-gradient(180deg,var(--color-green-soft),var(--color-green-soft)),var(--color-card);background-color:var(--color-card)}
+.btbl thead .frz,.btbl tfoot .frz{z-index:7}
+.btbl tfoot td{background-color:#FAFCFB;border-top:0;box-shadow:inset 0 2px 0 var(--color-green)}
+.btbl tfoot td.frz{background-color:#FAFCFB}
+.btbl td,.btbl th{text-overflow:clip}
+.vgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:13px;margin-bottom:16px}
+.vcard{background:var(--color-card);border:1px solid var(--color-line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow-card)}
+.vcard .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-tx-3);font-weight:700}
+.vcard .v{font-size:24px;font-weight:600;margin-top:5px}
+.vcard .d{font-size:11px;color:var(--color-tx-2);margin-top:3px}
+.vcard.ok .v{color:var(--color-green-d)}.vcard.bad .v{color:var(--color-clay)}.vcard.warn .v{color:var(--color-gold)}
+.page{display:none}.page.on{display:block}
+.drop{border:2px dashed var(--color-line);border-radius:12px;padding:34px;text-align:center;color:var(--color-tx-2);font-size:13px;background:#FAFCFB}
+.drop b{color:var(--color-green-d)}
+.person{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--color-line);border-radius:11px;padding:13px 15px;margin-bottom:9px}
+.person .nm{font-size:13.5px;font-weight:600}.person .un{font-size:11.5px;color:var(--color-tx-3);font-family:'IBM Plex Mono'}
+.person .tag{font-size:9.5px;font-weight:700;letter-spacing:.05em;padding:2px 7px;border-radius:5px;background:var(--color-green-soft);color:var(--color-green-d)}
+.person .rt{margin-left:auto;font-size:11.5px;color:var(--color-tx-2)}
+.statepill{font-size:9.5px;font-weight:700;letter-spacing:.04em;padding:2px 6px;border-radius:5px;text-transform:uppercase}
+.statepill.final{background:var(--color-green-soft);color:var(--color-green-d)}
+.statepill.provisional{background:var(--color-gold-soft);color:#9A6E1E}
+.statepill.none{background:#EEF2EF;color:var(--color-tx-3)}
+/* Distinct from "final" on purpose — a $0 assumption must never look like a verified
+   resolved cost, even though it now counts toward coverage. */
+.statepill.assumed{background:#E7EEF5;color:#3E5E80}
+.ordlist{display:flex;flex-wrap:wrap;gap:5px}
+.ordlist span,.ordlist button{font-family:'IBM Plex Mono';font-size:10.5px;background:#F1F5F3;border:1px solid var(--color-line);border-radius:5px;padding:1px 6px;cursor:pointer;font-weight:400;color:inherit}
+.ordlist span:hover,.ordlist button:hover{background:var(--color-green-soft);border-color:#CBD8D1}
+.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--color-green-soft);border:1px solid #CFE3D8;color:var(--color-green-d);border-radius:20px;padding:4px 10px;font-size:11.5px;font-weight:600}
+.chip b{cursor:pointer;opacity:.6}.chip b:hover{opacity:1}
+.scroll{max-height:420px;overflow:auto}
+@media(max-width:1080px){.srcbar{flex-direction:column;flex-wrap:nowrap;align-items:stretch}.srcbar>*{max-width:100%;min-width:0}.srcbar .meta{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}}
+
+/* Keep the three tiles the same height and let their lists scroll, rather than
+   letting a 29-row customer list stretch the whole row. */
+.grid .tile{max-height:520px}
+.grid .tile-body{min-height:0}
+.row .rt .sub{white-space:nowrap}
+.row .rt{min-width:92px}
+.hero .asof{white-space:nowrap}
+.hero .partial{font-size:11px;color:#C9B07E;margin-left:2px}
+
+/* A grid child will not shrink below its content width unless told to, so a long
+   customer name pushes the value column out of the tile instead of ellipsing. */
+.row > div:first-child,.prow .nm,.dl .nm,.mrow .mid{min-width:0}
+.row .nm{display:block}
+
+/* The billing-item view carries eleven columns; the list levels do not. Widen the
+   panel only where a table needs it. */
+.drill.wide{width:min(1180px,97vw)}
+.drill.wide .tbl td,.drill.wide .tbl th{padding:8px 9px}
+.drill .pl{margin:6px}
+
+/* Keep source + period controls on one line; the meta text gives way first. */
+.srcbar .meta{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto}
+.srcbar .spacer{flex:0 0 8px}
+.srcbar .sel{flex:0 0 auto}
+
+/* ===== Reference-layout refinements: period controls in the topbar, source bar
+   nested inside Data Management, and hover-reveal status dots ===== */
+/* Right-anchor the filter controls robustly: margin-left:auto keeps them pinned to
+   the topbar's own right edge (not the viewport's) even if they wrap to their own
+   line on a narrower window, where justify-content alone would otherwise leave a
+   lone wrapped item sitting at the left. */
+.topbar .controls{row-gap:8px;margin-left:auto}
+
+/* Source bar nested inside a Data Management card — flatten its own chrome so it
+   doesn't double up on the panel it now lives in. */
+.cbox .srcbar{background:transparent;border:0;box-shadow:none;padding:14px 17px 16px;margin-bottom:0}
+
+/* Hover-reveal status dots: nothing is shown until there's something to say, and
+   the full message only appears on hover, keeping the topbar quiet the rest of the time. */
+.dotwrap{position:relative;display:inline-flex;align-items:center;padding:4px;cursor:default}
+.dotwrap .sdot{width:10px;height:10px;border-radius:50%;display:block;box-shadow:0 0 0 3px currentColor}
+.dotwrap.warn .sdot{background:var(--color-gold);color:var(--color-gold-soft)}
+.dotwrap.bad .sdot{background:var(--color-clay);color:var(--color-clay-soft)}
+.dotwrap .tip{position:absolute;top:130%;right:-4px;width:320px;max-width:min(320px,86vw);background:#fff;border:1px solid var(--color-line);
+  border-radius:11px;box-shadow:var(--shadow-lift);padding:12px 14px;font-size:12px;line-height:1.55;color:var(--color-tx-2);
+  opacity:0;visibility:hidden;transform:translateY(-4px);transition:opacity .15s,transform .15s;z-index:70}
+.dotwrap .tip b{color:var(--color-tx)}
+.dotwrap .tip .tipsep{height:1px;background:var(--color-line-2);margin:9px 0}
+.dotwrap:hover .tip,.dotwrap:focus-within .tip{opacity:1;visibility:visible;transform:translateY(0)}
+/* Below 1080px the tip can no longer anchor to the dot's own position and
+   stay guaranteed on-screen — the dot can land anywhere along a wrapped
+   controls row, and a 320px popover anchored to it will push past a narrow
+   viewport's edge regardless of left/right tweaks. Pinned to the viewport
+   itself instead, the way a mobile sheet would, rather than floating off
+   whatever it's attached to. */
+@media(max-width:1080px){.fromto{order:3}.dotwrap .tip{position:fixed;top:auto;bottom:16px;left:16px;right:16px;width:auto;max-width:none}}
+
+/* ===== Animated assistant — a local, non-LLM Q&A widget over the dashboard's own
+   aggregated data. The icon is the AIF logo mark (chat-icon.gif); an idle bob and a
+   "pop" bounce on new activity are pure CSS keyframes applied to the whole image,
+   no animation library. ===== */
+/* The wrapper is exactly the button (60px), so the button can be dragged anywhere on screen; the panel and the hint bubble are
+   anchored to it and open toward the side that has room (.pl-r = extend right, .pl-b = open below). Default spot: bottom-right. */
+.chatwrap{position:fixed;right:24px;bottom:24px;z-index:90;width:60px;height:60px}
+/* Solid circle in the logo's own bubble green (#01603E) so the mark sits seamlessly on it; the circle clips
+   the GIF's bubble tail, and the shadow lives on the button itself (box-shadow isn't clipped by its own overflow). */
+.chatfab{width:60px;height:60px;border-radius:50%;border:0;cursor:grab;background:#01603E;overflow:hidden;display:grid;place-items:center;padding:0;
+  box-shadow:0 10px 28px -8px rgba(18,92,63,.5),0 2px 8px rgba(12,22,19,.18);border-radius:50%;transition:transform .18s,box-shadow .18s;
+  touch-action:none}
+.chatfab:hover{transform:scale(1.07);box-shadow:0 14px 34px -8px rgba(18,92,63,.6),0 2px 10px rgba(12,22,19,.22)}
+.chatfab:active{transform:scale(.96);cursor:grabbing}
+/* Dragging the fab moves the whole widget (hint + panel + button) — no
+   transition fighting the pointer while it's actively being moved, and no
+   accidental text selection elsewhere on the page mid-drag. */
+.chatwrap.dragging{user-select:none}
+.chatfab .botface,.chat-h .botface{pointer-events:none;-webkit-user-drag:none;user-select:none}
+.chat-h{cursor:grab;touch-action:none;user-select:none}
+.chat-h .chat-close{cursor:pointer}
+.chatwrap.dragging .chat-h{cursor:grabbing}
+.chatwrap.dragging .chatfab{cursor:grabbing;transition:none}
+.chatfab .botface{width:100%;height:100%;object-fit:contain;border-radius:0;animation:botbob 3.4s ease-in-out infinite}
+.chatfab:focus-visible{outline:2px solid var(--color-mint);outline-offset:3px}
+
+@keyframes botbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes botpop{0%{transform:scale(1)}35%{transform:scale(1.12)}100%{transform:scale(1)}}
+@keyframes hintfloat{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.botface{display:block;transform-box:fill-box;transform-origin:center}
+.botface.pop{animation:botpop .4s ease-out}
+
+/* The hint is taken out of the column flow (the closed panel keeps its height there, which used to push it far
+   above the button) and anchored to the button inside the fixed .chatwrap, so it always travels with it. */
+.chathint{position:absolute;right:72px;bottom:0;height:60px;width:max-content;display:flex;align-items:center;pointer-events:none;z-index:1}
+.chathint.hide{display:none}
+.hint-pill{position:relative;pointer-events:auto;display:flex;align-items:center;gap:8px;max-width:min(260px,calc(100vw - 100px));background:#fff;border:1px solid var(--color-line);box-shadow:var(--shadow-card);border-radius:20px;padding:8px 8px 8px 14px;font-size:12px;line-height:1.35;color:var(--color-tx-2)}
+.hint-pill::after{content:'';position:absolute;top:50%;right:-5px;width:9px;height:9px;background:#fff;border-top:1px solid var(--color-line);border-right:1px solid var(--color-line);transform:translateY(-50%) rotate(45deg)}
+.hint-text{cursor:pointer;white-space:normal}
+.hint-x{flex:none;width:18px;height:18px;border-radius:50%;border:0;background:transparent;color:var(--color-tx-3);font-size:14px;line-height:1;cursor:pointer;padding:0}
+.hint-x:hover{background:var(--color-line-2);color:var(--color-tx)}
+.hint-x:focus-visible,.hint-text:focus-visible{outline:2px solid var(--color-mint);outline-offset:1px}
+.chathint.in .hint-pill{animation:hintslide .3s ease-out both}
+.chathint.above{right:0;bottom:68px;height:auto}
+.chathint.ltr{right:auto;left:0}
+.chathint.ltr .hint-pill::after{right:auto;left:22px}
+.chathint.below{right:0;top:68px;bottom:auto;height:auto}
+.chathint.below .hint-pill::after{top:-5px;bottom:auto;right:22px;transform:rotate(-45deg)}
+.chathint.above .hint-pill::after{top:auto;bottom:-5px;right:22px;transform:rotate(135deg)}
+.chathint.above.in .hint-pill{animation-name:hintrise}
+@keyframes hintslide{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:none}}
+@keyframes hintrise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media(max-width:640px){.chathint{right:0;bottom:68px;height:auto}.chathint .hint-pill::after{top:auto;bottom:-5px;right:22px;transform:rotate(135deg)}.chathint.in .hint-pill{animation-name:hintrise}}
+
+.chatpanel{position:absolute;right:0;bottom:70px;width:400px;max-width:88vw;max-height:min(640px,78vh);background:var(--color-card);border:1px solid var(--color-line);border-radius:18px;
+  box-shadow:var(--shadow-lift);display:flex;flex-direction:column;overflow:hidden;opacity:0;transform:translateY(18px) scale(.96);
+  pointer-events:none;transition:opacity .22s cubic-bezier(.2,.8,.3,1),transform .22s cubic-bezier(.2,.8,.3,1);transform-origin:bottom right}
+.chatpanel.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.chatwrap.pl-r .chatpanel{right:auto;left:0;transform-origin:bottom left}
+.chatwrap.pl-b .chatpanel{bottom:auto;top:70px;transform-origin:top right}
+.chatwrap.pl-b .chatpanel:not(.show){transform:translateY(-18px) scale(.96)}
+.chatwrap.pl-r.pl-b .chatpanel{transform-origin:top left}
+.chat-h{display:flex;align-items:center;gap:10px;padding:13px 13px 12px;background:linear-gradient(120deg,var(--color-hero-a),var(--color-hero-b));color:#fff;flex:none}
+.chat-h .botface{width:34px;height:34px;flex:none;object-fit:contain;border-radius:50%}
+.chat-h-text{flex:1;min-width:0}
+.chat-h-text b{display:block;font-size:13px}
+.chat-h-text span{display:block;font-size:10.5px;color:#9FE3C1;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-close{border:0;background:rgba(255,255,255,.12);color:#fff;width:26px;height:26px;border-radius:8px;cursor:pointer;flex:none;
+  display:grid;place-items:center;font-size:13px;transition:.15s}
+.chat-close:hover{background:rgba(255,255,255,.22)}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--color-canvas)}
+.cmsg{max-width:86%;padding:9px 12px;border-radius:14px;font-size:12.5px;line-height:1.5;animation:msgin .22s cubic-bezier(.2,.8,.3,1) both}
+.cmsg.bot{align-self:flex-start;background:#fff;border:1px solid var(--color-line);border-bottom-left-radius:4px}
+.cmsg.user{align-self:flex-end;background:var(--color-green);color:#fff;border-bottom-right-radius:4px}
+@keyframes msgin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.cmsg .clist{margin-top:7px;display:flex;flex-direction:column;gap:5px}
+.cmsg .crow{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:11.5px;padding:6px 9px;background:var(--color-green-soft);border-radius:8px}
+.cmsg .crow b{color:var(--color-green-d);font-family:'Space Grotesk'}
+.cmsg .crow .csub{color:var(--color-tx-3);font-size:10px;display:block;margin-top:1px}
+.cmsg .csug{display:block;width:100%;text-align:left;background:var(--color-green-soft);border:1px solid #CFE3D8;border-radius:8px;
+  padding:6px 9px;margin-top:6px;font-size:11.5px;color:var(--color-green-d);cursor:pointer;transition:.13s}
+.cmsg .csug:hover{background:var(--color-green-glow)}
+/* structured analyst answers (kind 'rich'): headline, sections, small tables, caveats, follow-up chips */
+.cmsg.rich{max-width:97%;width:97%;padding:11px 12px 12px}
+.cmsg .rtitle{font:600 10.5px 'Space Grotesk';letter-spacing:.07em;text-transform:uppercase;color:var(--color-green-d);margin-bottom:5px}
+.cmsg .rsum{font-size:12.5px;line-height:1.5;color:var(--color-tx)}
+.cmsg .rsum b,.cmsg .rul b,.cmsg .rnote b{color:var(--color-green-d);font-weight:700}
+.cmsg .rnote b{color:var(--color-gold-ink)}
+.cmsg .rsec{margin-top:10px}
+.cmsg .rhead{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--color-tx-3);margin-bottom:4px}
+.cmsg .rul{margin:0;padding-left:15px;display:flex;flex-direction:column;gap:3px;font-size:11.5px;line-height:1.45;color:var(--color-tx-2)}
+.cmsg .rtbl{width:100%;border-collapse:collapse;font-size:10.5px;line-height:1.35}
+.cmsg .rtbl th{text-align:left;font-weight:700;color:var(--color-tx-3);padding:3px 4px;border-bottom:1px solid var(--color-line)}
+.cmsg .rtbl td{padding:4px;border-bottom:1px solid var(--color-line-2);vertical-align:top;color:var(--color-tx)}
+.cmsg .rtbl .n{text-align:right;white-space:nowrap}
+.cmsg .rnote{margin-top:8px;padding:6px 9px;background:var(--color-gold-soft);border:1px solid var(--color-gold-line);border-radius:8px;font-size:10.5px;line-height:1.4;color:var(--color-gold-ink)}
+.cmsg .rfollow{margin-top:10px;display:flex;flex-direction:column;gap:4px}
+.typing{display:inline-flex;gap:4px;padding:3px 2px}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--color-tx-3);display:block;animation:typingdot 1.1s ease-in-out infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes typingdot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-4px);opacity:1}}
+.chat-input-row{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--color-line);background:#fff;flex:none}
+.chat-input-row input{flex:1;border:1px solid var(--color-line);border-radius:20px;padding:9px 14px;font:inherit;font-size:12.5px;outline:0;transition:.15s;min-width:0}
+.chat-input-row input:focus{border-color:var(--color-mint);box-shadow:0 0 0 3px var(--color-green-soft)}
+.chat-input-row button{width:36px;height:36px;border-radius:50%;border:0;background:var(--color-green);color:#fff;cursor:pointer;
+  display:grid;place-items:center;font-size:14px;transition:.15s;flex:none}
+.chat-input-row button:hover{background:var(--color-green-d)}
+.chat-input-row button:disabled{opacity:.5;cursor:default}
+@media(max-width:1080px){.chatwrap{right:14px;bottom:14px}.chatpanel{width:min(400px,calc(100vw - 28px))}}
+@media(prefers-reduced-motion:reduce){.chatfab .botface,.botface.pop,.chathint .hint-pill{animation:none!important}}
+
+
+/* Section 2: product carries 8 numeric columns, customer 4 — weighted split, stacked when product can't fit. */
+.grid2.grid-break{grid-template-columns:1.13fr 1fr}
+.btbl th,.btbl td{padding-left:6px;padding-right:6px}
+.grid2.grid-break>.cbox{display:flex;flex-direction:column}.grid2.grid-break>.cbox>.btbl-wrap{flex:1}
+@media(max-width:1400px){.grid2.grid-break{grid-template-columns:1fr}}
+
+/* Entrance animations (driven by app.js): held state before a card scrolls into view. */
+.cn{display:inline-block;font-variant-numeric:tabular-nums}
+svg .cn{display:inline}
+#marginTile .wf-fill,#dCard .wf-fill{animation:none}
+.anim-hold .wf-fill{transform:scaleX(0)}
+.anim-hold .wv,.anim-hold .j,.anim-hold .pct-sub,.anim-hold .dl{opacity:0}
+
+/* Sales-by-period QTY overlay (line, dots, pills), tooltip and held state for the entrance animation */
+
+.chartwrap{position:relative;min-width:0;min-height:236px}
+.period-h .lg{align-items:center}.period-h .lg span{display:inline-flex;align-items:center}.period-h .lg .lg-q{margin-right:5px}
+.chart .cmbar{transform-box:fill-box;transform-origin:bottom}
+.chart .qdot{transform-box:fill-box;transform-origin:center;transition:r .12s}
+.chart .qdot.hl{r:8.5}
+.chart .bar.hl{filter:brightness(1.08)}
+.chart .qpill rect{fill:var(--color-gold-soft);stroke:var(--color-gold-line);stroke-width:1}
+.chart .qpill text{font-family:'IBM Plex Mono';font-size:9.5px;font-weight:700;fill:var(--color-gold-ink)}
+.chart .qpill.hl rect{fill:var(--color-amber);stroke:var(--color-amber)}.chart .qpill.hl text{fill:#fff}
+.ctip{position:absolute;z-index:5;min-width:176px;background:#fff;border:1px solid var(--color-line);border-radius:10px;box-shadow:var(--shadow-lift);padding:9px 11px;font-size:11px;color:var(--color-tx-2);pointer-events:none}
+.ctip[hidden]{display:none}
+.ctip .th{font-size:12px;font-weight:700;color:var(--color-tx);margin-bottom:5px}.ctip .th em{font-weight:500;font-style:normal;color:var(--color-gold-ink)}
+.ctip .r{display:flex;justify-content:space-between;gap:14px;padding:1.5px 0}.ctip .r b{color:var(--color-tx);font-weight:600;font-variant-numeric:tabular-nums}
+.ctip .r b.up{color:var(--color-green-d)}.ctip .r b.dn{color:var(--color-clay)}
+.anim-hold .chart .bar,.anim-hold .chart .cmbar{transform:scaleY(0)}
+.anim-hold .chart .qline{stroke-dashoffset:1}.anim-hold .chart .qdot{transform:scale(0)}.anim-hold .chart .qpill{opacity:0}
+.chart .qline{stroke-dasharray:1}
+
+/* Hero cards: B2B/B2C + Other breakdown on the right, aligned with the label row and the value row. Below ~200px of
+   card width (narrow viewports) it drops under the main value. */
+.hstat{container-type:inline-size}
+.hs-in{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;align-items:center}
+.hs-in .l{grid-column:1;grid-row:1}.hs-in .v{grid-column:1;grid-row:2;white-space:nowrap}
+.hs-in .brk{grid-column:2;display:flex;align-items:center;justify-content:flex-end;gap:5px;white-space:nowrap;min-height:14px}
+.hs-in .b1{grid-row:1}.hs-in .b2{grid-row:2;margin-top:5px}
+.hs-in .brk:empty{display:none}
+.brk .dot{width:6px;height:6px;border-radius:50%;flex:none}.brk .dot.fg{background:#3FA378}.brk .dot.oth{background:#E9C77E}
+.brk .bl{font-size:8.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--color-hero-tx);font-weight:600}
+.brk .bv{font-size:10.5px;font-weight:600;color:#fff;font-variant-numeric:tabular-nums}
+@container (max-width:215px){.hs-in{grid-template-columns:minmax(0,1fr)}.hs-in .brk{grid-column:1;justify-content:flex-start}.hs-in .b1{grid-row:3;margin-top:6px}.hs-in .b2{grid-row:4;margin-top:2px}}
+.hstat .l .help-ico{width:14px;height:14px;margin-left:2px;color:#B7CFC4;border-color:rgba(255,255,255,.28);background:transparent;font-size:9px}
+.hstat .l .help-ico:hover{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.4)}
+.hstat .v small{white-space:nowrap}
+
+/* Grouped cards: titled, collapsible sections with subtotals; group rows stick under the column header. */
+.btbl tbody tr.grp-row td{height:30px;position:sticky;top:var(--thead-h,56px);z-index:5;background:var(--grp-bg);box-shadow:inset 0 -1px 0 var(--color-line);cursor:default;font-weight:700;color:var(--color-tx)}
+.btbl tbody tr.grp-row:hover td,.btbl tbody tr.grp-row:hover .frz{background:var(--grp-bg)}
+.btbl tbody tr.grp-row td.frz{z-index:6}
+.btbl tbody tr.grp-row.lvl1.fg{--grp-bg:#DCEBE2}
+.btbl tbody tr.grp-row.lvl1.oth{--grp-bg:#F3E8D2}
+.btbl tbody tr.grp-row.lvl2{--grp-bg:#FBF6EA}
+.btbl tbody tr.grp-row.lvl2 td{top:calc(var(--thead-h,56px) + 30px);z-index:4;font-weight:600;font-size:12px}
+.btbl tbody tr.grp-row.lvl2 td.frz{z-index:5;padding-left:14px}
+.btbl tbody tr.grp-row td b{font-weight:700}
+.grp-btn{display:flex;align-items:center;gap:6px;width:100%;max-width:100%;border:0;background:transparent;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer;overflow:hidden}
+.grp-btn .gt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.grp-btn .cnt{flex:none;font-size:10px;font-weight:600;color:var(--color-tx-3);background:rgba(255,255,255,.7);border-radius:8px;padding:1px 6px}
+.grp-btn:focus-visible,.dlg:focus-visible{outline:2px solid var(--color-mint);outline-offset:1px}
+.chev{flex:none;display:inline-block;width:10px;font-size:10px;color:var(--color-tx-2)}
+/* donut legend groups */
+.dlg{display:grid;grid-template-columns:auto 1fr auto;gap:6px;align-items:center;width:100%;border:0;background:transparent;font:inherit;text-align:left;cursor:pointer;padding:5px 6px;border-radius:7px}
+.dlg:hover{background:var(--color-green-soft)}
+.dlg.g1{font-weight:700;font-size:11.5px;margin-top:4px;border-bottom:1px solid var(--color-line-2);border-radius:0}.dlg.g1:first-child{margin-top:0}
+.dlg.g2{font-weight:600;font-size:11px;color:var(--color-tx-2);padding-left:16px}
+.dlg .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dlg .pc{font-family:'Space Grotesk';font-weight:600;font-size:11.5px}
+.dl[data-g]{padding-left:22px}
+.donut.dim .seg{opacity:.22;transition:opacity .15s}.donut.dim .seg.hl{opacity:1}
+.anim-hold .gring{opacity:0}
+
+.ctip .fn{margin-top:6px;padding-top:5px;border-top:1px solid var(--color-line-2);font-size:10px;color:var(--color-tx-3)}
+.period-h .t .help-ico{vertical-align:1px}
+
+.tile-h .t .help-ico{vertical-align:1px}
+
+/* Popover: paragraph breaks in the body, a Disclaimer section under a thin divider, and room to grow */
+.pop-body{white-space:pre-line}
+.pop-disc{margin-top:10px;padding-top:9px;border-top:1px solid var(--color-line)}
+.pop-disc[hidden]{display:none}
+.pop-disc-l{font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--color-tx-3);font-weight:700}
+.pop-disc-b{margin-top:3px;font-size:11px;line-height:1.5;color:var(--color-tx-2)}
+@media(max-height:520px){.popover{max-height:calc(100vh - 16px);overflow:auto}.pop-arrow{display:none}}
+.ctip{max-width:270px}.ctip .fn .vcdef{display:block;margin-top:3px}
+.drill-card .t .help-ico{vertical-align:1px}
+
+/* Sticky Sales filter bar. z-index 30: above the hero, cards, sticky table headers (<= 7) and the chart tooltip, below
+   the modal scrim (40) / drawer, chat (90) and popovers (190+). The period <select> menus are drawn by the browser
+   above everything, so the bar cannot clip them. */
+.bar-sentinel{height:1px;margin-bottom:-1px;pointer-events:none}
+.topbar-card{position:sticky;top:12px;z-index:30;transition:padding .15s ease,margin-bottom .15s ease,box-shadow .15s ease,background-color .15s ease,border-color .15s ease}
+.topbar-card .sub{max-height:24px;overflow:hidden;transition:max-height .15s ease,opacity .15s ease}
+.topbar-card.stuck{padding-top:8px;padding-bottom:8px;margin-bottom:calc(18px + var(--bar-delta,0px));box-shadow:0 10px 22px -14px rgba(12,22,19,.4),var(--shadow-card)}
+.topbar-card.stuck .sub{max-height:0;opacity:0}
+/* while stuck the bar takes the light green of the table group headers (QTY / Value / VC / CM); it returns to the card surface when the page is back at the top */
+.topbar-card.stuck{background:var(--color-green-glow);border-color:#BCD8C8}
+.topbar-card.no-anim,.topbar-card.no-anim *{transition:none!important}
+@media(prefers-reduced-motion:reduce){.topbar-card,.topbar-card .sub{transition:none}}
+.level,.hero,.cbox,.tile,.period{scroll-margin-top:var(--sticky-offset,84px)}
+/* narrow: summary + Filters button, only while stuck */
+.bar-summary,.bar-filters{display:none}
+@media(max-width:760px){
+  .topbar-card.stuck{flex-wrap:nowrap;gap:10px}
+  .topbar-card.stuck .bar-title{flex:none}
+  .topbar-card.stuck .bar-summary{display:block;flex:1;min-width:0;font-size:12px;color:var(--color-tx-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+  .topbar-card.stuck .bar-filters{display:inline-flex;align-items:center;flex:none;border:1px solid var(--color-line);background:#fff;border-radius:8px;padding:5px 12px;font:inherit;font-size:12px;font-weight:600;color:var(--color-tx);cursor:pointer;box-shadow:var(--shadow-card)}
+  .topbar-card.stuck.expanded .bar-filters{background:var(--color-green);border-color:var(--color-green);color:#fff}
+  .topbar-card.stuck .controls{display:none}
+  .topbar-card.stuck.expanded .controls{display:flex;position:absolute;left:0;right:0;top:calc(100% + 6px);padding:12px;background:var(--color-card);border:1px solid var(--color-line);border-radius:12px;box-shadow:var(--shadow-lift)}
+}
+
+/* Status dots are buttons that open the shared popover; footer links inside it */
+.dotwrap{border:0;background:none;font:inherit;cursor:pointer}
+.dotwrap:focus-visible{outline:2px solid var(--color-mint);outline-offset:2px;border-radius:50%}
+.popover.wide{width:340px;max-width:min(340px,92vw)}
+.pop-links{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:10px;padding-top:9px;border-top:1px solid var(--color-line)}
+.pop-links[hidden]{display:none}
+.pop-link{border:0;background:none;padding:0;font:inherit;font-size:12px;font-weight:600;color:var(--color-green-d);cursor:pointer}
+.pop-link:hover{text-decoration:underline}.pop-link:focus-visible{outline:2px solid var(--color-mint);outline-offset:2px;border-radius:3px}
+.zsum{width:100%;margin:6px 0 10px}.zsum caption{caption-side:top;text-align:left;font-size:11px;font-weight:700;color:var(--color-tx-2);padding:6px 4px}
+
+/* Hero: headline on top, then the three KPI cards with the sparkline filling the rest of the same row. The sparkline's box
+   is the grid cell (stretched to the cards' height); the SVG is positioned inside it so it never sets the row height. */
+.hero-in{grid-template-areas:"head head" "stats spark";row-gap:16px}
+.hero-head{grid-area:head;min-width:0}
+.hero .hstats{grid-area:stats;margin-top:0}
+.hero-spark{grid-area:spark;position:relative;min-width:0;min-height:0}
+.hero .spark{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible}
+@media(max-width:1080px){
+  .hero-in{grid-template-areas:"head" "stats" "spark";row-gap:18px}
+  .hero-spark{height:76px}
+}
+
+/* The bar follows the module: title + optional "Coming soon" badge, and only the controls that module's config allows. */
+.bar-h{display:flex;align-items:center;gap:10px}
+.topbar-card.no-period #scopeSeg,.topbar-card.no-period .fromto{display:none}
+.topbar-card.no-through #dataThroughPill{display:none}
+.topbar-card.no-dots .dotwrap{display:none!important}
+.topbar-card.no-filters .controls{display:none}
+.topbar-card.no-filters{padding-top:10px;padding-bottom:10px}
+.topbar-card.no-filters .bar-summary,.topbar-card.no-filters .bar-filters{display:none!important}
+
+}
+
+/* ---- Phones (<= 640px; iPhone SE 375 and the 320 floor): nothing may overlap or push the page sideways. The desktop layout is
+   untouched above this width. ---- */
+@media(max-width:640px){
+  .main{padding:14px 12px 72px}
+  .topbar-card{padding:14px}
+  .topbar-card:not(.stuck) .sub{max-height:48px}                         /* the subtitle wraps to two lines here; don't clip it */
+  .topbar-card .controls{gap:8px}
+  .topbar-card .seg{display:flex;width:100%}.topbar-card .seg button{flex:1 1 0;min-width:0;padding-left:6px;padding-right:6px}
+  .topbar-card .fromto{width:100%;justify-content:space-between;flex-wrap:wrap}
+  /* the one-row "stuck" bar: the title block kept the width of its (hidden) subtitle and shoved the Filters button off-screen */
+  .topbar-card.stuck{min-width:0;padding:10px 12px}
+  .topbar-card.stuck .bar-title{flex:0 1 auto;min-width:0}
+  .topbar-card.stuck .sub{display:none}
+  .topbar-card.stuck .bar-h h2{white-space:nowrap}
+  .hero-in{padding:20px 16px;gap:14px}
+  .hero .big{font-size:38px}
+  .hstats{grid-template-columns:1fr;gap:10px}                            /* three cards side by side get ~75px each: stack them */
+  .hero-spark{height:64px}
+  .level{flex-wrap:wrap;gap:6px 10px}.level .t{min-width:0;flex:1 1 150px}.level .src{white-space:nowrap;flex:none}.level .ln{display:none}
+  .period{padding:14px 12px}
+  .period-h{flex-direction:column;align-items:flex-start;gap:8px}
+  .period-h .lg{flex-wrap:wrap;gap:6px 14px}
+  .cbox .hd{padding:13px 14px 10px}
+  .mg-hero,.contrib{min-width:0}
+  .donutwrap{align-items:center}
+  .drill{max-width:100vw}
+}
+@media(max-width:380px){
+  .main{padding:12px 10px 72px}
+  .hero-in{padding:18px 14px}
+  .hero .big{font-size:34px}
+  .topbar-card .seg button{font-size:12px}
+}
+
+/* ---- Menu on narrow screens (<= 1080px): the sidebar is an off-canvas drawer opened from the hamburger in the top bar ---- */
+.menu-btn,.rail-close,.nav-scrim{display:none}
+.noaccess-bar{display:none}
+@media(max-width:1080px){
+  .menu-btn{display:inline-flex;align-items:center;justify-content:center;flex:none;width:36px;height:36px;margin-right:2px;border:1px solid var(--color-line);background:#fff;border-radius:10px;color:var(--color-tx);cursor:pointer;box-shadow:var(--shadow-card);padding:0;-webkit-tap-highlight-color:transparent}
+  .menu-btn .ico{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .menu-btn[aria-expanded="true"]{background:var(--color-green-soft)}
+  .menu-btn:focus-visible,.rail-close:focus-visible{outline:2px solid var(--color-mint);outline-offset:2px}
+  .bar-h{gap:10px}
+  .noaccess-bar{display:flex;padding:0 0 12px}
+  .rail{display:flex;position:fixed;top:0;left:0;bottom:0;width:min(290px,86vw);height:100vh;height:100dvh;z-index:70;overflow-y:auto;overscroll-behavior:contain;
+    transform:translateX(-104%);visibility:hidden;transition:transform .26s cubic-bezier(.4,0,.15,1),visibility 0s linear .26s;box-shadow:none;padding-top:max(22px,env(safe-area-inset-top))}
+  .rail.open{transform:translateX(0);visibility:visible;transition:transform .26s cubic-bezier(.4,0,.15,1),visibility 0s;box-shadow:24px 0 60px -20px rgba(0,0,0,.55)}
+  .rail .brand{position:relative;padding-right:40px}
+  .rail-close{display:inline-flex;align-items:center;justify-content:center;position:absolute;top:-2px;right:-6px;width:34px;height:34px;border:0;border-radius:9px;background:rgba(255,255,255,.07);color:var(--color-rail-tx);cursor:pointer;padding:0}
+  .rail-close .ico{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+  .nav a{padding:12px 12px;font-size:14px}                        /* thumb-sized targets */
+  .rail .foot .signout{padding:6px 0;font-size:12.5px}
+  .nav-scrim{display:block;position:fixed;inset:0;z-index:65;background:rgba(12,22,19,.5);opacity:0;pointer-events:none;transition:opacity .22s;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+  .nav-scrim.show{opacity:1;pointer-events:auto}
+  html.nav-locked,html.nav-locked body{overflow:hidden}
+  html.nav-locked .chatwrap{visibility:hidden}
+}
+@media(prefers-reduced-motion:reduce){.rail,.rail.open,.nav-scrim{transition:none}}
+
+/* ---- Assistant on phones: a smaller button that stays put (fixed to the screen, clear of the notch / home bar) while the page scrolls ---- */
+@media(max-width:640px){
+  .chatwrap{width:46px;height:46px;right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));position:fixed}
+  .chatfab{width:46px;height:46px}
+  .chatfab:hover{transform:none}
+  .chathint{right:56px;height:46px}
+  .chathint.in:not(.above):not(.below) .hint-pill{max-width:min(240px,calc(100vw - 96px))}
+  .chatpanel{bottom:56px;width:min(400px,calc(100vw - 24px));max-height:min(640px,calc(100dvh - 90px))}
+  .chatwrap.pl-b .chatpanel{top:56px;bottom:auto}
+  .chathint.above{bottom:54px}.chathint.below{top:54px}
+}
+
+/* ---- Tooltips / status-dot popovers on phones: a floating card at the bottom of the screen, inside the safe area, a little see-through
+   (blurred behind) so the page stays in view; scrolls inside itself when long; never taller than 70% of the screen ---- */
+@media(max-width:640px){
+  .popover{max-height:min(70vh,480px);max-height:min(70dvh,480px);overflow-y:auto;overscroll-behavior:contain;border-radius:16px;padding:16px 16px 16px;
+    background:rgba(255,255,255,.88);-webkit-backdrop-filter:blur(14px) saturate(1.25);backdrop-filter:blur(14px) saturate(1.25);
+    border-color:rgba(255,255,255,.7);box-shadow:0 18px 50px -12px rgba(12,22,19,.45),0 2px 10px rgba(12,22,19,.12)}
+  .popover.wide{width:auto;max-width:none}
+  .pop-close{top:8px;right:8px;width:32px;height:32px;font-size:14px;border-radius:9px;background:rgba(12,22,19,.05)}
+  .pop-title{font-size:14px;padding-right:34px}.pop-body{font-size:13px}
+  .pop-formula,.pop-tip{background:rgba(241,245,243,.75)}
+  .pop-links{gap:8px 18px}.pop-link{font-size:13px;padding:6px 0}
+  .pop-scrim{background:rgba(18,33,28,.16)}
+  /* the dots are 18px: give them a thumb-sized touch area without changing how they look */
+  .dotwrap{position:relative}.dotwrap::after{content:'';position:absolute;inset:-12px}
+  .ctip{background:rgba(255,255,255,.9);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);min-width:150px}
+  .help-ico{width:20px;height:20px;font-size:11px}
+}
+
+/* Data Management's source line wraps instead of being cut off on narrow screens (placed last: the nowrap/ellipsis rule above it has the same specificity) */
+@media(max-width:1080px){.srcbar .meta{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;flex:0 1 auto}}

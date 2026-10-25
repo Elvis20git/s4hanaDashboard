@@ -1,0 +1,746 @@
+[
+ {
+  "path": "03_from-sales-by-product-fg-row/01_landing.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "L0 \u2014 dashboard",
+  "click": "(start)",
+  "state": "Sales by product, Finished Goods group row; target hovered, dashed outline = click target (added by the capture script)"
+ },
+ {
+  "path": "03_from-sales-by-product-fg-row/02_level-1_product-by-period.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "WFP Infant 15kg \u2014 VOLUME 4,281.5 MT | REVENUE $6.32M | VC $4.76M | CM $1.57M | card: Margin \u2014 contribution-YTD \u24d8 Jan\u2013Sep 2026 & Sep 24.78% Sep 29.23% CM $1.57M Sep $179.5K Rev",
+  "level": "L1 \u2014 Product \u2014 by period",
+  "click": "Clicked the product name in Sales by product",
+  "state": "Drawer open; next click target hovered"
+ },
+ {
+  "path": "03_from-sales-by-product-fg-row/03_level-2_product-period-documents.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "WFP Infant 15kg \u00b7 Sep 2026 \u2014 REVENUE $614.2K | DOCUMENTS 16 | LINES 20",
+  "level": "L2 \u2014 Product \u00d7 period \u2014 billing documents",
+  "click": "Clicked the 09.2026 period row",
+  "state": "Documents list; first document hovered"
+ },
+ {
+  "path": "03_from-sales-by-product-fg-row/04_level-2_product-period-documents_filter-box.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "WFP Infant 15kg \u00b7 Sep 2026 \u2014 REVENUE $614.2K | DOCUMENTS 16 | LINES 20",
+  "level": "L2 \u2014 Product \u00d7 period \u2014 billing documents",
+  "click": "Typed \"900007\" in the drawer Filter\u2026 box",
+  "state": "Client-side text filter hides non-matching rows"
+ },
+ {
+  "path": "03_from-sales-by-product-fg-row/05_level-3_document-items.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Billing document 90000761 \u2014 REVENUE $40.7K | VC $28.0K | CM $12.7K | ITEMS 1",
+  "level": "L3 \u2014 Billing document items and sold batches",
+  "click": "Clicked billing document 90000761",
+  "state": "Items table (wide drawer); first manufacturing-order chip hovered"
+ },
+ {
+  "path": "03_from-sales-by-product-fg-row/06_level-4_batch-orders.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Batch WFP260831 \u2014 BATCH COST $173.8K | PRODUCED 165.24 MT | UNIT COST $1,051.62/MT | STATE Final",
+  "level": "L4 \u2014 Batch: manufacturing orders behind the VC",
+  "click": "Clicked a manufacturing-order chip on the item row",
+  "state": "Batch WFP260831; first order button hovered"
+ },
+ {
+  "path": "03_from-sales-by-product-fg-row/07_level-5_order-cost.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Order 1000786 \u2014 TOTAL ACTUAL COST $55.2K | COST PER KG PRODUCED $1.110 | PRODUCED 49,680 kg | LINES POSTED 57",
+  "level": "L5 \u2014 Manufacturing order: materials, activities, utilities",
+  "click": "Clicked an order in the batch table",
+  "state": "Order cost detail (top of drawer)"
+ },
+ {
+  "path": "03_from-sales-by-product-fg-row/08_level-5_order-cost_scrolled.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Order 1000786 \u2014 TOTAL ACTUAL COST $55.2K | COST PER KG PRODUCED $1.110 | PRODUCED 49,680 kg | LINES POSTED 57",
+  "level": "L5 \u2014 Manufacturing order (scrolled)",
+  "click": "Scrolled the drawer body",
+  "state": "Lower part: cost-per-unit comparison and \"Produced into\" link panel"
+ },
+ {
+  "path": "03_from-sales-by-product-fg-row/09_back-via-breadcrumb.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Billing document 90000761 \u2014 REVENUE $40.7K | VC $28.0K | CM $12.7K | ITEMS 1",
+  "level": "Back \u2014 breadcrumb step",
+  "click": "Clicked breadcrumb step 3 of \"WFP Infant 15kg \u203a Sep 2026 \u203a 90000761 \u203a WFP260831 \u203a 1000786\"",
+  "state": "Returns to that level; deeper crumbs are dropped"
+ },
+ {
+  "path": "03_from-sales-by-product-fg-row/10_closed-back-on-dashboard.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "L0 \u2014 drawer closed",
+  "click": "Clicked \u2715 (Esc and clicking the dimmed area also close)",
+  "state": "Dashboard unchanged; period filters persist"
+ },
+ {
+  "path": "05_from-sales-by-customer-row/01_landing.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "L0 \u2014 dashboard",
+  "click": "(start)",
+  "state": "Sales by customer, Finished Goods group row; target hovered, dashed outline = click target (added by the capture script)"
+ },
+ {
+  "path": "05_from-sales-by-customer-row/02_level-1_customer-by-period.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "NATIONAL CHILD DEVELOPMENT AGENCY(NCDA) \u2014 VOLUME 3,353.6 MT | REVENUE $5.18M | VC $3.26M | CM $1.92M | card: Margin \u2014 contribution-YTD \u24d8 Feb\u2013Sep 2026 & Sep 37.05% Sep 34.87% CM $1.92M Sep $413.9K Rev",
+  "level": "L1 \u2014 Product \u2014 by period",
+  "click": "Clicked the customer name in Sales by customer",
+  "state": "Drawer open; next click target hovered"
+ },
+ {
+  "path": "05_from-sales-by-customer-row/03_level-2_customer-period-documents.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "NATIONAL CHILD DEVELOPMENT AGENCY(NCDA) \u00b7 Sep 2026 \u2014 REVENUE $1.19M | DOCUMENTS 2 | LINES 8",
+  "level": "L2 \u2014 Product \u00d7 period \u2014 billing documents",
+  "click": "Clicked the 09.2026 period row",
+  "state": "Documents list; first document hovered"
+ },
+ {
+  "path": "05_from-sales-by-customer-row/04_level-2_customer-period-documents_filter-box.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "NATIONAL CHILD DEVELOPMENT AGENCY(NCDA) \u00b7 Sep 2026 \u2014 REVENUE $1.19M | DOCUMENTS 2 | LINES 8",
+  "level": "L2 \u2014 Product \u00d7 period \u2014 billing documents",
+  "click": "Typed \"900007\" in the drawer Filter\u2026 box",
+  "state": "Client-side text filter hides non-matching rows"
+ },
+ {
+  "path": "05_from-sales-by-customer-row/05_level-3_document-items.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Billing document 90000771 \u2014 REVENUE $279.7K | VC $179.9K | CM $99.9K | ITEMS 3",
+  "level": "L3 \u2014 Billing document items and sold batches",
+  "click": "Clicked billing document 90000771",
+  "state": "Items table (wide drawer); first manufacturing-order chip hovered"
+ },
+ {
+  "path": "05_from-sales-by-customer-row/06_level-4_batch-orders.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Batch GOM260918 \u2014 BATCH COST $36.1K | PRODUCED 42.75 MT | UNIT COST $843.6/MT | STATE Final",
+  "level": "L4 \u2014 Batch: manufacturing orders behind the VC",
+  "click": "Clicked a manufacturing-order chip on the item row",
+  "state": "Batch GOM260918; first order button hovered"
+ },
+ {
+  "path": "05_from-sales-by-customer-row/07_level-5_order-cost.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Order 1000821 \u2014 TOTAL ACTUAL COST $19.6K | COST PER KG PRODUCED $0.810 | PRODUCED 24,318 kg | LINES POSTED 42",
+  "level": "L5 \u2014 Manufacturing order: materials, activities, utilities",
+  "click": "Clicked an order in the batch table",
+  "state": "Order cost detail (top of drawer)"
+ },
+ {
+  "path": "05_from-sales-by-customer-row/08_level-5_order-cost_scrolled.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Order 1000821 \u2014 TOTAL ACTUAL COST $19.6K | COST PER KG PRODUCED $0.810 | PRODUCED 24,318 kg | LINES POSTED 42",
+  "level": "L5 \u2014 Manufacturing order (scrolled)",
+  "click": "Scrolled the drawer body",
+  "state": "Lower part: cost-per-unit comparison and \"Produced into\" link panel"
+ },
+ {
+  "path": "05_from-sales-by-customer-row/09_back-via-breadcrumb.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Billing document 90000771 \u2014 REVENUE $279.7K | VC $179.9K | CM $99.9K | ITEMS 3",
+  "level": "Back \u2014 breadcrumb step",
+  "click": "Clicked breadcrumb step 3 of \"NATIONAL CHILD DEVELOPMENT AGENCY(NCDA) \u203a Sep 2026 \u203a 90000771 \u203a GOM260918 \u203a 1000821\"",
+  "state": "Returns to that level; deeper crumbs are dropped"
+ },
+ {
+  "path": "05_from-sales-by-customer-row/10_closed-back-on-dashboard.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "L0 \u2014 drawer closed",
+  "click": "Clicked \u2715 (Esc and clicking the dimmed area also close)",
+  "state": "Dashboard unchanged; period filters persist"
+ },
+ {
+  "path": "01_from-period-chart-bar/01_landing.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "L0 \u2014 dashboard",
+  "click": "(start)",
+  "state": "Sales by period chart; Sep 2026 column; target hovered, dashed outline = click target (added by the capture script)"
+ },
+ {
+  "path": "01_from-period-chart-bar/02_level-1_period-product-mix.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Sep 2026 \u2014 REVENUE $2.73M | VOLUME 2,025.9 MT | CM $793.8K | LINES 106",
+  "level": "L1 \u2014 Period \u2014 product mix",
+  "click": "Clicked the 09.2026 column in the chart",
+  "state": "Drawer open; next click target hovered"
+ },
+ {
+  "path": "01_from-period-chart-bar/03_level-2_product-period-documents.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "MoH Infant 18kg \u00b7 Sep 2026 \u2014 REVENUE $907.3K | DOCUMENTS 1 | LINES 5",
+  "level": "L2 \u2014 Product \u00d7 period \u2014 billing documents",
+  "click": "Clicked product 11000013 in the product mix",
+  "state": "Documents list; first document hovered"
+ },
+ {
+  "path": "01_from-period-chart-bar/04_level-2_product-period-documents_filter-box.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "MoH Infant 18kg \u00b7 Sep 2026 \u2014 REVENUE $907.3K | DOCUMENTS 1 | LINES 5",
+  "level": "L2 \u2014 Product \u00d7 period \u2014 billing documents",
+  "click": "Typed \"900007\" in the drawer Filter\u2026 box",
+  "state": "Client-side text filter hides non-matching rows"
+ },
+ {
+  "path": "01_from-period-chart-bar/05_level-3_document-items.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Billing document 90000772 \u2014 REVENUE $907.3K | VC $593.2K | CM $314.0K | ITEMS 5",
+  "level": "L3 \u2014 Billing document items and sold batches",
+  "click": "Clicked billing document 90000772",
+  "state": "Items table (wide drawer); first manufacturing-order chip hovered"
+ },
+ {
+  "path": "01_from-period-chart-bar/06_level-4_batch-orders.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Batch GOI260905 \u2014 BATCH COST $80.3K | PRODUCED 71.946 MT | UNIT COST $1,116.41/MT | STATE Final",
+  "level": "L4 \u2014 Batch: manufacturing orders behind the VC",
+  "click": "Clicked a manufacturing-order chip on the item row",
+  "state": "Batch GOI260905; first order button hovered"
+ },
+ {
+  "path": "01_from-period-chart-bar/07_level-5_order-cost.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Order 1000804 \u2014 TOTAL ACTUAL COST $52.8K | COST PER KG PRODUCED $1.070 | PRODUCED 49,536 kg | LINES POSTED 50",
+  "level": "L5 \u2014 Manufacturing order: materials, activities, utilities",
+  "click": "Clicked an order in the batch table",
+  "state": "Order cost detail (top of drawer)"
+ },
+ {
+  "path": "01_from-period-chart-bar/08_level-5_order-cost_scrolled.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Order 1000804 \u2014 TOTAL ACTUAL COST $52.8K | COST PER KG PRODUCED $1.070 | PRODUCED 49,536 kg | LINES POSTED 50",
+  "level": "L5 \u2014 Manufacturing order (scrolled)",
+  "click": "Scrolled the drawer body",
+  "state": "Lower part: cost-per-unit comparison and \"Produced into\" link panel"
+ },
+ {
+  "path": "01_from-period-chart-bar/09_back-via-breadcrumb.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Billing document 90000772 \u2014 REVENUE $907.3K | VC $593.2K | CM $314.0K | ITEMS 5",
+  "level": "Back \u2014 breadcrumb step",
+  "click": "Clicked breadcrumb step 3 of \"MoH Infant 18kg \u203a Sep 2026 \u203a 90000772 \u203a GOI260905 \u203a 1000804\"",
+  "state": "Returns to that level; deeper crumbs are dropped"
+ },
+ {
+  "path": "01_from-period-chart-bar/10_closed-back-on-dashboard.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "L0 \u2014 drawer closed",
+  "click": "Clicked \u2715 (Esc and clicking the dimmed area also close)",
+  "state": "Dashboard unchanged; period filters persist"
+ },
+ {
+  "path": "02_from-month-by-month-list/01_landing.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "L0 \u2014 dashboard",
+  "click": "(start)",
+  "state": "Month-by-Month Comparison list; Sep 2026 row; target hovered, dashed outline = click target (added by the capture script)"
+ },
+ {
+  "path": "02_from-month-by-month-list/02_level-1_period-product-mix.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Sep 2026 \u2014 REVENUE $2.73M | VOLUME 2,025.9 MT | CM $793.8K | LINES 106",
+  "level": "L1 \u2014 Period \u2014 product mix",
+  "click": "Clicked the 09.2026 row in the list",
+  "state": "Drawer open; next click target hovered"
+ },
+ {
+  "path": "02_from-month-by-month-list/03_level-2_product-period-documents.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "WFP Infant 15kg \u00b7 Sep 2026 \u2014 REVENUE $614.2K | DOCUMENTS 16 | LINES 20",
+  "level": "L2 \u2014 Product \u00d7 period \u2014 billing documents",
+  "click": "Clicked product 11000033 in the product mix",
+  "state": "Documents list; first document hovered"
+ },
+ {
+  "path": "02_from-month-by-month-list/04_level-2_product-period-documents_filter-box.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "WFP Infant 15kg \u00b7 Sep 2026 \u2014 REVENUE $614.2K | DOCUMENTS 16 | LINES 20",
+  "level": "L2 \u2014 Product \u00d7 period \u2014 billing documents",
+  "click": "Typed \"900007\" in the drawer Filter\u2026 box",
+  "state": "Client-side text filter hides non-matching rows"
+ },
+ {
+  "path": "02_from-month-by-month-list/05_level-3_document-items.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Billing document 90000761 \u2014 REVENUE $40.7K | VC $28.0K | CM $12.7K | ITEMS 1",
+  "level": "L3 \u2014 Billing document items and sold batches",
+  "click": "Clicked billing document 90000761",
+  "state": "Items table (wide drawer); first manufacturing-order chip hovered"
+ },
+ {
+  "path": "02_from-month-by-month-list/06_level-4_batch-orders.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Batch WFP260831 \u2014 BATCH COST $173.8K | PRODUCED 165.24 MT | UNIT COST $1,051.62/MT | STATE Final",
+  "level": "L4 \u2014 Batch: manufacturing orders behind the VC",
+  "click": "Clicked a manufacturing-order chip on the item row",
+  "state": "Batch WFP260831; first order button hovered"
+ },
+ {
+  "path": "02_from-month-by-month-list/07_level-5_order-cost.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Order 1000786 \u2014 TOTAL ACTUAL COST $55.2K | COST PER KG PRODUCED $1.110 | PRODUCED 49,680 kg | LINES POSTED 57",
+  "level": "L5 \u2014 Manufacturing order: materials, activities, utilities",
+  "click": "Clicked an order in the batch table",
+  "state": "Order cost detail (top of drawer)"
+ },
+ {
+  "path": "02_from-month-by-month-list/08_level-5_order-cost_scrolled.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Order 1000786 \u2014 TOTAL ACTUAL COST $55.2K | COST PER KG PRODUCED $1.110 | PRODUCED 49,680 kg | LINES POSTED 57",
+  "level": "L5 \u2014 Manufacturing order (scrolled)",
+  "click": "Scrolled the drawer body",
+  "state": "Lower part: cost-per-unit comparison and \"Produced into\" link panel"
+ },
+ {
+  "path": "02_from-month-by-month-list/09_back-via-breadcrumb.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Billing document 90000761 \u2014 REVENUE $40.7K | VC $28.0K | CM $12.7K | ITEMS 1",
+  "level": "Back \u2014 breadcrumb step",
+  "click": "Clicked breadcrumb step 3 of \"WFP Infant 15kg \u203a Sep 2026 \u203a 90000761 \u203a WFP260831 \u203a 1000786\"",
+  "state": "Returns to that level; deeper crumbs are dropped"
+ },
+ {
+  "path": "02_from-month-by-month-list/10_closed-back-on-dashboard.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "L0 \u2014 drawer closed",
+  "click": "Clicked \u2715 (Esc and clicking the dimmed area also close)",
+  "state": "Dashboard unchanged; period filters persist"
+ },
+ {
+  "path": "04_from-sales-by-product-other-row/01_landing.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "L0 \u2014 dashboard",
+  "click": "(start)",
+  "state": "Sales by product, Others group row (Maize By-Products); target hovered, dashed outline = click target (added by the capture script)"
+ },
+ {
+  "path": "04_from-sales-by-product-other-row/02_level-1_product-by-period.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Maize By-Products \u2014 VOLUME 569.9 MT | REVENUE $122.8K | VC $0 | CM $122.8K | card: Margin \u2014 contribution-YTD \u24d8 Jan\u2013Sep 2026 & Sep 100% Sep 100% CM $122.8K Sep $36.3K Revenue",
+  "level": "L1 \u2014 Product by period (Other product)",
+  "click": "Clicked the product row",
+  "state": "Drawer open; CM shown as 100% (assumed $0 VC); next target hovered"
+ },
+ {
+  "path": "04_from-sales-by-product-other-row/03_level-2_product-period-documents.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Maize By-Products \u00b7 Sep 2026 \u2014 REVENUE $36.3K | DOCUMENTS 23 | LINES 25",
+  "level": "L2 \u2014 Product \u00d7 period \u2014 billing documents",
+  "click": "Clicked the 09.2026 period row",
+  "state": "Documents list; CM N/A or computed per document"
+ },
+ {
+  "path": "04_from-sales-by-product-other-row/04_level-3_document-items.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Billing document 90000767 \u2014 REVENUE $1.1K | VC $0 | CM $1.1K | ITEMS 1",
+  "level": "L3 \u2014 Billing document items (no batch, no orders)",
+  "click": "Clicked billing document 90000767",
+  "state": "Batch cell = N/A badge, \"Assumed $0\" status pill, no order chips: the path ends here"
+ },
+ {
+  "path": "04_from-sales-by-product-other-row/05_closed-back-on-dashboard.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "L0 \u2014 drawer closed",
+  "click": "Clicked \u2715",
+  "state": "Dashboard unchanged"
+ },
+ {
+  "path": "06_from-donut-segment/01_landing.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "L0 \u2014 dashboard",
+  "click": "(start)",
+  "state": "Donut; hovered segment is highlighted (the native <title> tooltip is not captured by screenshots: \"name \u00b7 group / Revenue \u2026 / CM \u2026\")"
+ },
+ {
+  "path": "06_from-donut-segment/02_level-1_product-by-period.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "WFP Infant 15kg \u2014 VOLUME 4,281.5 MT | REVENUE $6.32M | VC $4.76M | CM $1.57M | card: Margin \u2014 contribution-YTD \u24d8 Jan\u2013Sep 2026 & Sep 24.78% Sep 29.23% CM $1.57M Sep $179.5K Rev",
+  "level": "L1 \u2014 Product \u2014 by period",
+  "click": "Clicked the product segment of the donut",
+  "state": "Drawer open; next click target hovered"
+ },
+ {
+  "path": "06_from-donut-segment/03_level-2_product-period-documents.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "WFP Infant 15kg \u00b7 Sep 2026 \u2014 REVENUE $614.2K | DOCUMENTS 16 | LINES 20",
+  "level": "L2 \u2014 Product \u00d7 period \u2014 billing documents",
+  "click": "Clicked the 09.2026 period row",
+  "state": "Documents list; first document hovered"
+ },
+ {
+  "path": "06_from-donut-segment/04_level-2_product-period-documents_filter-box.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "WFP Infant 15kg \u00b7 Sep 2026 \u2014 REVENUE $614.2K | DOCUMENTS 16 | LINES 20",
+  "level": "L2 \u2014 Product \u00d7 period \u2014 billing documents",
+  "click": "Typed \"900007\" in the drawer Filter\u2026 box",
+  "state": "Client-side text filter hides non-matching rows"
+ },
+ {
+  "path": "06_from-donut-segment/05_level-3_document-items.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Billing document 90000761 \u2014 REVENUE $40.7K | VC $28.0K | CM $12.7K | ITEMS 1",
+  "level": "L3 \u2014 Billing document items and sold batches",
+  "click": "Clicked billing document 90000761",
+  "state": "Items table (wide drawer); first manufacturing-order chip hovered"
+ },
+ {
+  "path": "06_from-donut-segment/06_level-4_batch-orders.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Batch WFP260831 \u2014 BATCH COST $173.8K | PRODUCED 165.24 MT | UNIT COST $1,051.62/MT | STATE Final",
+  "level": "L4 \u2014 Batch: manufacturing orders behind the VC",
+  "click": "Clicked a manufacturing-order chip on the item row",
+  "state": "Batch WFP260831; first order button hovered"
+ },
+ {
+  "path": "06_from-donut-segment/07_level-5_order-cost.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Order 1000786 \u2014 TOTAL ACTUAL COST $55.2K | COST PER KG PRODUCED $1.110 | PRODUCED 49,680 kg | LINES POSTED 57",
+  "level": "L5 \u2014 Manufacturing order: materials, activities, utilities",
+  "click": "Clicked an order in the batch table",
+  "state": "Order cost detail (top of drawer)"
+ },
+ {
+  "path": "06_from-donut-segment/08_level-5_order-cost_scrolled.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Order 1000786 \u2014 TOTAL ACTUAL COST $55.2K | COST PER KG PRODUCED $1.110 | PRODUCED 49,680 kg | LINES POSTED 57",
+  "level": "L5 \u2014 Manufacturing order (scrolled)",
+  "click": "Scrolled the drawer body",
+  "state": "Lower part: cost-per-unit comparison and \"Produced into\" link panel"
+ },
+ {
+  "path": "06_from-donut-segment/09_back-via-breadcrumb.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Billing document 90000761 \u2014 REVENUE $40.7K | VC $28.0K | CM $12.7K | ITEMS 1",
+  "level": "Back \u2014 breadcrumb step",
+  "click": "Clicked breadcrumb step 3 of \"WFP Infant 15kg \u203a Sep 2026 \u203a 90000761 \u203a WFP260831 \u203a 1000786\"",
+  "state": "Returns to that level; deeper crumbs are dropped"
+ },
+ {
+  "path": "06_from-donut-segment/10_closed-back-on-dashboard.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "L0 \u2014 drawer closed",
+  "click": "Clicked \u2715 (Esc and clicking the dimmed area also close)",
+  "state": "Dashboard unchanged; period filters persist"
+ },
+ {
+  "path": "07_from-donut-legend/01_landing.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "L0 \u2014 dashboard",
+  "click": "(start)",
+  "state": "Donut legend item; target hovered, dashed outline = click target (added by the capture script)"
+ },
+ {
+  "path": "07_from-donut-legend/02_level-1_product-by-period.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "WFP Infant 15kg \u2014 VOLUME 4,281.5 MT | REVENUE $6.32M | VC $4.76M | CM $1.57M | card: Margin \u2014 contribution-YTD \u24d8 Jan\u2013Sep 2026 & Sep 24.78% Sep 29.23% CM $1.57M Sep $179.5K Rev",
+  "level": "L1 \u2014 Product \u2014 by period",
+  "click": "Clicked a legend item",
+  "state": "Drawer open; next click target hovered"
+ },
+ {
+  "path": "07_from-donut-legend/03_level-2_product-period-documents.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "WFP Infant 15kg \u00b7 Sep 2026 \u2014 REVENUE $614.2K | DOCUMENTS 16 | LINES 20",
+  "level": "L2 \u2014 Product \u00d7 period \u2014 billing documents",
+  "click": "Clicked the 09.2026 period row",
+  "state": "Documents list; first document hovered"
+ },
+ {
+  "path": "07_from-donut-legend/04_level-2_product-period-documents_filter-box.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "WFP Infant 15kg \u00b7 Sep 2026 \u2014 REVENUE $614.2K | DOCUMENTS 16 | LINES 20",
+  "level": "L2 \u2014 Product \u00d7 period \u2014 billing documents",
+  "click": "Typed \"900007\" in the drawer Filter\u2026 box",
+  "state": "Client-side text filter hides non-matching rows"
+ },
+ {
+  "path": "07_from-donut-legend/05_level-3_document-items.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Billing document 90000761 \u2014 REVENUE $40.7K | VC $28.0K | CM $12.7K | ITEMS 1",
+  "level": "L3 \u2014 Billing document items and sold batches",
+  "click": "Clicked billing document 90000761",
+  "state": "Items table (wide drawer); first manufacturing-order chip hovered"
+ },
+ {
+  "path": "07_from-donut-legend/06_level-4_batch-orders.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Batch WFP260831 \u2014 BATCH COST $173.8K | PRODUCED 165.24 MT | UNIT COST $1,051.62/MT | STATE Final",
+  "level": "L4 \u2014 Batch: manufacturing orders behind the VC",
+  "click": "Clicked a manufacturing-order chip on the item row",
+  "state": "Batch WFP260831; first order button hovered"
+ },
+ {
+  "path": "07_from-donut-legend/07_level-5_order-cost.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Order 1000786 \u2014 TOTAL ACTUAL COST $55.2K | COST PER KG PRODUCED $1.110 | PRODUCED 49,680 kg | LINES POSTED 57",
+  "level": "L5 \u2014 Manufacturing order: materials, activities, utilities",
+  "click": "Clicked an order in the batch table",
+  "state": "Order cost detail (top of drawer)"
+ },
+ {
+  "path": "07_from-donut-legend/08_level-5_order-cost_scrolled.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Order 1000786 \u2014 TOTAL ACTUAL COST $55.2K | COST PER KG PRODUCED $1.110 | PRODUCED 49,680 kg | LINES POSTED 57",
+  "level": "L5 \u2014 Manufacturing order (scrolled)",
+  "click": "Scrolled the drawer body",
+  "state": "Lower part: cost-per-unit comparison and \"Produced into\" link panel"
+ },
+ {
+  "path": "07_from-donut-legend/09_back-via-breadcrumb.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Billing document 90000761 \u2014 REVENUE $40.7K | VC $28.0K | CM $12.7K | ITEMS 1",
+  "level": "Back \u2014 breadcrumb step",
+  "click": "Clicked breadcrumb step 3 of \"WFP Infant 15kg \u203a Sep 2026 \u203a 90000761 \u203a WFP260831 \u203a 1000786\"",
+  "state": "Returns to that level; deeper crumbs are dropped"
+ },
+ {
+  "path": "07_from-donut-legend/10_closed-back-on-dashboard.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "L0 \u2014 drawer closed",
+  "click": "Clicked \u2715 (Esc and clicking the dimmed area also close)",
+  "state": "Dashboard unchanged; period filters persist"
+ },
+ {
+  "path": "08_from-profitability-row/01_landing.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "L0 \u2014 dashboard",
+  "click": "(start)",
+  "state": "Profitability by product table; target hovered, dashed outline = click target (added by the capture script)"
+ },
+ {
+  "path": "08_from-profitability-row/02_level-1_product-by-period.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "WFP Infant 15kg \u2014 VOLUME 4,281.5 MT | REVENUE $6.32M | VC $4.76M | CM $1.57M | card: Margin \u2014 contribution-YTD \u24d8 Jan\u2013Sep 2026 & Sep 24.78% Sep 29.23% CM $1.57M Sep $179.5K Rev",
+  "level": "L1 \u2014 Product \u2014 by period",
+  "click": "Clicked a product in Profitability by product",
+  "state": "Drawer open; next click target hovered"
+ },
+ {
+  "path": "08_from-profitability-row/03_level-2_product-period-documents.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "WFP Infant 15kg \u00b7 Sep 2026 \u2014 REVENUE $614.2K | DOCUMENTS 16 | LINES 20",
+  "level": "L2 \u2014 Product \u00d7 period \u2014 billing documents",
+  "click": "Clicked the 09.2026 period row",
+  "state": "Documents list; first document hovered"
+ },
+ {
+  "path": "08_from-profitability-row/04_level-2_product-period-documents_filter-box.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "WFP Infant 15kg \u00b7 Sep 2026 \u2014 REVENUE $614.2K | DOCUMENTS 16 | LINES 20",
+  "level": "L2 \u2014 Product \u00d7 period \u2014 billing documents",
+  "click": "Typed \"900007\" in the drawer Filter\u2026 box",
+  "state": "Client-side text filter hides non-matching rows"
+ },
+ {
+  "path": "08_from-profitability-row/05_level-3_document-items.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Billing document 90000761 \u2014 REVENUE $40.7K | VC $28.0K | CM $12.7K | ITEMS 1",
+  "level": "L3 \u2014 Billing document items and sold batches",
+  "click": "Clicked billing document 90000761",
+  "state": "Items table (wide drawer); first manufacturing-order chip hovered"
+ },
+ {
+  "path": "08_from-profitability-row/06_level-4_batch-orders.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Batch WFP260831 \u2014 BATCH COST $173.8K | PRODUCED 165.24 MT | UNIT COST $1,051.62/MT | STATE Final",
+  "level": "L4 \u2014 Batch: manufacturing orders behind the VC",
+  "click": "Clicked a manufacturing-order chip on the item row",
+  "state": "Batch WFP260831; first order button hovered"
+ },
+ {
+  "path": "08_from-profitability-row/07_level-5_order-cost.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Order 1000786 \u2014 TOTAL ACTUAL COST $55.2K | COST PER KG PRODUCED $1.110 | PRODUCED 49,680 kg | LINES POSTED 57",
+  "level": "L5 \u2014 Manufacturing order: materials, activities, utilities",
+  "click": "Clicked an order in the batch table",
+  "state": "Order cost detail (top of drawer)"
+ },
+ {
+  "path": "08_from-profitability-row/08_level-5_order-cost_scrolled.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Order 1000786 \u2014 TOTAL ACTUAL COST $55.2K | COST PER KG PRODUCED $1.110 | PRODUCED 49,680 kg | LINES POSTED 57",
+  "level": "L5 \u2014 Manufacturing order (scrolled)",
+  "click": "Scrolled the drawer body",
+  "state": "Lower part: cost-per-unit comparison and \"Produced into\" link panel"
+ },
+ {
+  "path": "08_from-profitability-row/09_back-via-breadcrumb.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Billing document 90000761 \u2014 REVENUE $40.7K | VC $28.0K | CM $12.7K | ITEMS 1",
+  "level": "Back \u2014 breadcrumb step",
+  "click": "Clicked breadcrumb step 3 of \"WFP Infant 15kg \u203a Sep 2026 \u203a 90000761 \u203a WFP260831 \u203a 1000786\"",
+  "state": "Returns to that level; deeper crumbs are dropped"
+ },
+ {
+  "path": "08_from-profitability-row/10_closed-back-on-dashboard.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "L0 \u2014 drawer closed",
+  "click": "Clicked \u2715 (Esc and clicking the dimmed area also close)",
+  "state": "Dashboard unchanged; period filters persist"
+ },
+ {
+  "path": "09_from-sales-by-product-fg-row_range-mar-jun/01_landing.png",
+  "filters": "03.2026 \u2192 06.2026",
+  "totals": "Hero $6.54M (1 Mar \u2013 30 Jun 2026)",
+  "level": "L0 \u2014 dashboard",
+  "click": "(start)",
+  "state": "Sales by product with the range set to Mar 2026 \u2192 Jun 2026; target hovered, dashed outline = click target (added by the capture script)"
+ },
+ {
+  "path": "09_from-sales-by-product-fg-row_range-mar-jun/02_level-1_product-by-period.png",
+  "filters": "03.2026 \u2192 06.2026",
+  "totals": "WFP Infant 15kg \u2014 VOLUME 2,437.1 MT | REVENUE $3.59M | VC $2.70M | CM $899.3K | card: Margin \u2014 contribution-YTD \u24d8 Mar\u2013Jun 2026 & Jun 25.02% Jun 25.15% CM $899.3K Jun $306.0K Re",
+  "level": "L1 \u2014 Product by period (range Mar\u2013Jun)",
+  "click": "Clicked the product name",
+  "state": "Only the 4 periods inside the range are listed; margin card range label follows the range"
+ },
+ {
+  "path": "09_from-sales-by-product-fg-row_range-mar-jun/03_level-2_product-period-documents.png",
+  "filters": "03.2026 \u2192 06.2026",
+  "totals": "WFP Infant 15kg \u00b7 Jun 2026 \u2014 REVENUE $1.22M | DOCUMENTS 24 | LINES 38",
+  "level": "L2 \u2014 Product \u00d7 period \u2014 billing documents",
+  "click": "Clicked the 06.2026 row",
+  "state": "Documents of that period"
+ },
+ {
+  "path": "title-bar/01_default.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "Title bar",
+  "click": "(page load)",
+  "state": "Default: preset \"2026 to date\" active, FROM 01.2026 \u2192 TO 09.2026, \"Data through Sep 2026\" pill, orange (zero-cost) and red (closure) status dots"
+ },
+ {
+  "path": "title-bar/02_preset-hover.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "Title bar",
+  "click": "Hovered the \"Last 12 months\" preset",
+  "state": "Preset segmented control hover state"
+ },
+ {
+  "path": "title-bar/03_from-dropdown-open_simulated.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "Title bar",
+  "click": "Opened FROM",
+  "state": "SIMULATED: the native <select> list (headless Chromium cannot render it); options = every month in the dataset, \"(open)\" suffix on provisional months"
+ },
+ {
+  "path": "title-bar/04_to-dropdown-open_simulated.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "Title bar",
+  "click": "Opened TO",
+  "state": "SIMULATED native list; same options as FROM"
+ },
+ {
+  "path": "title-bar/05_preset-last-12-months.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "Title bar",
+  "click": "Clicked \"Last 12 months\"",
+  "state": "With 9 months of data the preset resolves to the same range as the default (01.2026 \u2192 09.2026); label changes to \"Last 12 months \u00b7 Jan\u2013Sep 2026\""
+ },
+ {
+  "path": "title-bar/06_preset-all-data.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "Title bar",
+  "click": "Clicked \"All data\"",
+  "state": "Same range again with the current dataset"
+ },
+ {
+  "path": "title-bar/07_active-filter_custom-range-mar-jun.png",
+  "filters": "03.2026 \u2192 06.2026",
+  "totals": "Hero $6.54M (1 Mar \u2013 30 Jun 2026)",
+  "level": "Title bar",
+  "click": "Selected FROM 03.2026, then TO 06.2026",
+  "state": "No preset active (\"Custom range\"); hero, chart, tables and margin all recomputed for Mar\u2013Jun"
+ },
+ {
+  "path": "title-bar/08_from-to-auto-correct.png",
+  "filters": "02.2026 \u2192 02.2026",
+  "totals": "Hero $469.6K (1 Feb \u2013 28 Feb 2026)",
+  "level": "Title bar",
+  "click": "With FROM 03.2026, selected TO 02.2026 (earlier than FROM)",
+  "state": "The other end is moved: FROM becomes 02.2026 so FROM \u2264 TO always holds"
+ },
+ {
+  "path": "title-bar/09_status-dot-orange-open.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "Title bar",
+  "click": "Clicked the orange dot",
+  "state": "Popover: zero-cost assumption (revenue costed at assumed $0), with \"View affected products\" link"
+ },
+ {
+  "path": "title-bar/10_status-dot-red-open.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "Title bar",
+  "click": "Clicked the red dot",
+  "state": "Popover: closure-control breaches in the selected period, with \"Open Validation\" link"
+ },
+ {
+  "path": "title-bar/11_sticky-compact-bar.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "Title bar",
+  "click": "Scrolled down the page",
+  "state": "Bar sticks to the top and compacts (subtitle hidden)"
+ },
+ {
+  "path": "title-bar/12_mobile-390x844_collapsed.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "Title bar",
+  "click": "(page load at 390\u00d7844)",
+  "state": "Phone width \u2014 different viewport from the rest of the pack"
+ },
+ {
+  "path": "title-bar/13_mobile-390x844_sticky-filters-expanded.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "Title bar",
+  "click": "Scrolled, then tapped \"Filters\"",
+  "state": "Compact bar with the Filters toggle expanded (phone width)"
+ },
+ {
+  "path": "states/01_loading-month-columns.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "Hero $14.07M (1 Jan \u2013 30 Sep 2026)",
+  "level": "L0 \u2014 dashboard",
+  "click": "(page load; /api/data?period= delayed 4 s by the capture script)",
+  "state": "Sales by product/customer: Month columns muted and subtitle \"\u00b7 Loading month figures\u2026\" while the YTD columns are already filled"
+ },
+ {
+  "path": "states/02_drawer-while-next-level-loads.png",
+  "filters": "01.2026 \u2192 09.2026",
+  "totals": "WFP Infant 15kg \u2014 VOLUME 4,281.5 MT | REVENUE $6.32M | VC $4.76M | CM $1.57M | card: Margin \u2014 contribution-YTD \u24d8 Jan\u2013Sep 2026 & Sep 24.78% Sep 29.23% CM $1.57M Sep $179.5K Rev",
+  "level": "L1 \u2192 L2 (pending)",
+  "click": "Clicked the 09.2026 period row; /api/lines delayed 4 s by the capture script",
+  "state": "No spinner: the previous view (WFP Infant 15kg) stays on screen until the response arrives, then the whole drawer view is replaced"
+ }
+]
