@@ -95,6 +95,7 @@ export async function openPeriod(period) {
   setGrain('📐 Material × billing date. Billing documents are one level down.'
     + (d.total.provisional ? ' <b>Open period</b> — overhead not yet settled at period close.' : ''));
   statCells([['Revenue', fmtK(d.total.revenue)], ['Volume', fmtMT(d.total.qtyMt)],
+             ['VC', d.total.cogm == null ? 'N/A' : fmtK(d.total.cogm)],
              ['CM', d.total.cm == null ? 'N/A' : fmtK(d.total.cm)], ['Lines', d.total.lines]]);
   paintCrumb();
   const tot = d.total.revenue || 1;

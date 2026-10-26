@@ -1,9 +1,9 @@
 /* Extracted once from the original plain-JS dashboard (public/app.js, no longer in this repository); maintained by hand since.
    Pure view builders: each takes the state object S (same shape as the source's) and returns, per element id, the text /
    markup / attributes the source wrote there. No DOM access. The React components in src/components render this output. */
-import { MOF, PAL, fmtUSD, fmtK, fmtBMK, fmtMT, fmtPct, mLabel, pkey, esc, qtyFmt, monAbbr, yr2, fmtAvgKg, formatMoneyCompact, formatAvgPriceKg, fmtKg } from './format.js';
+import { MOF, PAL, fmtUSD, fmtK, fmtBMK, fmtMT, fmtPct, mLabel, pkey, esc, qtyFmt, monAbbr, yr2, fmtAvgMt, formatMoneyCompact, fmtKg } from './format.js';
 import { HELP, TERMS, STATUS_COPY, VC_DEF, canOpenDataManagement } from './copy.js';
-import { presetsFor, activePresetKey, scopeLabel as scopeLabelPure, fgOf, fgView, fgAvgKg, productPalette, isFinishedGood } from './derive.js';
+import { presetsFor, activePresetKey, scopeLabel as scopeLabelPure, fgOf, fgView, fgAvgMt, productPalette, isFinishedGood } from './derive.js';
 import { NUM_FMT } from './anim.js';
 
 /** Collapse state for the grouped cards (per viewer, local). Keys: 'prod:fg', 'prod:other', 'cust:fg', 'cust:other', 'leg:...' */
@@ -198,9 +198,9 @@ function heroBreakdown(idBase, groups, fmt) {
   // Realised revenue per KG, same single-month scope as Volume beside it.
   // Unit suffix dropped per explicit instruction (sales-header-restyle-
   // prompt.md) — the SEP tag alongside it is kept as the basis indicator.
-  // Avg price is Finished Goods only (B2B/B2C revenue / B2B/B2C quantity), per kg; Others are out of both sides.
-  const avgKg = fgAvgKg(last);
-  if (avgKg != null) $('hPrice').innerHTML = `${fmtAvgKg(avgKg)} <small>/kg</small>`;
+  // Avg price is Finished Goods only (B2B/B2C revenue / B2B/B2C quantity), per MT; Others are out of both sides.
+  const avgMt = fgAvgMt(last);
+  if (avgMt != null) $('hPrice').innerHTML = `${fmtAvgMt(avgMt)} <small>/MT</small>`;
   else $('hPrice').textContent = '—';
 
   return out;
@@ -598,10 +598,11 @@ export function buildContribution(S, seed = {}) {
     ring += `<circle class="gring" data-g="${g.key}" cx="100" cy="100" r="${R2}" fill="none" stroke="${g.key === 'fg' ? '#1B7A54' : '#C9922E'}" stroke-width="3" stroke-dasharray="${shown} ${C2 - shown}" stroke-dashoffset="${-(o2 + gap / 2)}" transform="rotate(-90 100 100)"/>`;
     o2 += len;
   });
-  const fgShare = fgS ? fgS.total.revenue / tot * 100 : 0;
+  const lastPer = d.periods && d.periods.length ? d.periods[d.periods.length - 1] : null;
+  const lastMon = lastPer ? MOF[+lastPer.period.slice(0, 2) - 1] : '—';
   $('donut').innerHTML = arcs + ring + `<text x="100" y="92" text-anchor="middle" class="num cn" data-v="${tot}" data-f="k" style="font-size:22px;font-weight:600;fill:var(--color-tx)">${fmtK(tot)}</text>`
     + `<text x="100" y="108" text-anchor="middle" style="font-size:9px;letter-spacing:.08em;fill:var(--color-tx-3);font-weight:600">NET REVENUE</text>`
-    + `<text x="100" y="122" text-anchor="middle" style="font-size:8.5px;fill:var(--color-tx-2);font-weight:600">B2B/B2C ${fgShare.toFixed(1)}%</text>`;
+    + `<text x="100" y="122" text-anchor="middle" style="font-size:8.5px;fill:var(--color-tx-2);font-weight:600">Jan to ${lastMon}</text>`;
   // Legend: group titles carry the group's share of total revenue, item % is also share of total revenue.
   const item = (p, bl) => `<button type="button" class="dl" data-code="${p.code}" data-g="${bl.g}" data-cat="${bl.key}" title="${esc(segTip(p, groups.find(x => x.key === bl.g), bl))}"><span class="sw" style="background:${pal.get(p.code)}"></span><span class="nm">${esc(p.name)}</span><span class="pc">${cn(p.revenue / tot * 100, 'pc1')}</span></button>`;
   const legBtn = (key, cls, title, share, hl, tip) => `<button type="button" class="dlg ${cls}" data-k="leg:${key}" data-hl="${hl}" title="${esc(tip)}" aria-expanded="${!collapsed.has('leg:' + key)}">${chev(!collapsed.has('leg:' + key))}<span class="nm">${esc(title)}</span><span class="pc">${share.toFixed(1)}%</span></button>`;

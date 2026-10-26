@@ -201,7 +201,7 @@ Let `ps = data.periods` (sorted ascending, within the selected window), `last = 
 | Latest-period breakdown | Hero | rows `B2B/B2C = fmtK(last.groups.fg.revenue)`, `Other = fmtK(last.groups.other.revenue)` | `views.js:144-148,178` | Sum of the two = tile |
 | Quantities (<MON>) | Hero | `last.qtyMt == null ? '—' : fmtMT(last.qtyMt)` (total FG+Other, latest period only) | `views.js:195` | `2,025.9 MT` live |
 | Quantities breakdown | Hero | `fmtMT(last.groups.fg.qtyMt)`, `fmtMT(last.groups.other.qtyMt)` | `views.js:196` | |
-| Avg price (<MON>) | Hero | `fgAvgKg(last) = last.groups.fg.qtyMt > 0 ? last.groups.fg.revenue / (last.groups.fg.qtyMt × 1000) : null` → `"$" + n.toFixed(3)` + `/kg`; `—` if null | `views.js:202-204`, `derive.js:45`, `format.js:40` | **Finished Goods only**, latest period only. `$/kg` |
+| Avg price (<MON>) | Hero | `fgAvgMt(last) = last.groups.fg.qtyMt > 0 ? last.groups.fg.revenue / last.groups.fg.qtyMt : null` → `"$" + Math.round(n).toLocaleString('en-US')` + `/MT`; `—` if null | `views.js:202-204`, `derive.js:45`, `format.js:40` | **Finished Goods only**, latest period only. `$/MT`, whole dollars |
 | Sparkline | Hero right | y-values = `periods[i].revenue` (total); y-scale `min..max` of those; first/last labels `Mon YY`; hover text `formatMoneyCompact(revenue)` | `spark.js:7-60` | Needs ≥ 2 periods, else empty |
 
 ### 2.2 Sales by period chart — `views.js:279-412`, `chartTip.js`
@@ -273,7 +273,7 @@ CM definition (as coded): `cmUsd(line) = round2(revenueUsd − cogmUsd)`; `cogmU
 | Metric | Formula | Source | Notes |
 |---|---|---|---|
 | Centre value | `fmtK(tot)` | `views.js:600` | |
-| "B2B/B2C x.x%" | `(sections.products[fg].total.revenue / tot × 100).toFixed(1)` | `views.js:599,602` | |
+| "Jan to \<Mon\>" | `MOF[d.periods[d.periods.length − 1].period month index]`; "Jan" is the fixed start; the end month is the last entry in `d.periods` | `views.js:601-604` | Always "Jan to \<latest month in the selected window\>". "—" if no periods |
 | Segment arc length | `len = max(0, p.revenue) / groupRev × disp[group] × C`; `disp.other = hasFg && hasOth ? min(0.5, max(othTrue, 0.04)) : (hasOth ? 1 : 0)` with `othTrue = max(0, otherRev)/tot`; `disp.fg = 1 − disp.other` | `views.js:582-590` | **Display width of "Other" is floored at 4 %**; legend/tooltips show true figures |
 | Legend item % | `(p.revenue / tot × 100).toFixed(1) + '%'` (animated via `pc1`) | `views.js:604` | Share of **total** revenue, not of the group |
 | Legend group % | `(group.rev / tot × 100).toFixed(1) + '%'`; "Other" category % = `bl.rev / tot × 100` | `views.js:605-615` | |
@@ -370,7 +370,7 @@ All levels honour the top-bar `from/to` (passed as `from/to` on every call) exce
 |---|---|---|---|---|---|---|
 | **L1a Product** | table row, donut segment/legend | `/api/data?material=<code>` | product code | Stat cells: Volume (`fmtMT(total.qtyMt)`), Revenue, VC, CM (`N/A` if null). Margin card from `summarisePeriods`. Rows: one per period (latest first): `fmtMT(qtyMt) · N lines · CM fmtK (fmtPct)`, revenue, `VC fmtK` | Periods ascending then **reversed** for display | `drillViews.js:43-57,75-85` |
 | **L1b Customer** | table row | `/api/data?customer=<code>` | customer code | same as L1a | same | `drillViews.js:59-73` |
-| **L1c Period** | chart bar / month row | `/api/data?period=<MM.YYYY>&from&to` (`from/to` are sent and AND-ed with `period`; no effect because the period lies inside the window) | period | Stat: Revenue, Volume, CM, Lines. Rows: one per product: share `(p.revenue / total.revenue × 100).toFixed(0)%`, `fmtMT`, `CM fmtPct`, revenue | `products` sorted revenue desc | `drillViews.js:87-110` |
+| **L1c Period** | chart bar / month row | `/api/data?period=<MM.YYYY>&from&to` (`from/to` are sent and AND-ed with `period`; no effect because the period lies inside the window) | period | Stat: Revenue, Volume, VC (`N/A` if `total.cogm == null`), CM, Lines. Rows: one per product: share `(p.revenue / total.revenue × 100).toFixed(0)%`, `fmtMT`, `CM fmtPct`, revenue | `products` sorted revenue desc | `drillViews.js:87-110` |
 | **L2/L3 Product×Period / Customer×Period** | period row | `/api/lines?material\|customer=<code>&period=<p>` (`/api/lines` does not read `from/to` server-side; it filters on `period`/`material`/`customer`/`billingDocument` only) | billing document | Per document: `rev = Σ revenueUsd`, `qty = Σ qtyMt (non-null)`, `cogm = Σ cogmUsd (non-null)`, `costed` count; `CM = costed ? rev − cogm : N/A`; items count. Stat: Revenue, Documents, Lines | Sorted by `billingDate` **desc**; ties keep API line order | `drillViews.js:112-152` |
 | **L4 Billing document** | document row | `/api/lines?billingDocument=<n>` (`/api/lines` filters on `billingDocument` only) | billing item × batch (one row per ledger line) | Item, billing date, product, Qty (MT, 3 dp; raw kg + unit if no conversion), revenue, batch, mfg orders, VC, CM, CM %, status. Stat: Revenue, VC (`Σ cogmUsd‖0`), CM (`rev − cogm`), Items | **Unsorted** — API/ledger order. Stat `VC/CM = 'N/A'` only if **no** line has cost | `drillViews.js:154-192` |
 | **L5 Batch** | order chip | `/api/batch/<batch>` | manufacturing order | Batch cost `fmtK(b.cost)`, produced `qty/1000` MT (3 dp), unit cost `unitCostPerKg×1000` $/MT (2 dp), State final/provisional. Rows per feeding order: `orderCost`, `buckets.materials`, `buckets.activities`, `buckets.overhead` (labelled **Utilities**). Footer: apportioned batch cost | Order order = `f.orders` insertion order (receipt order). **Unit cost shown is frozen** | `drillViews.js:194-223`, `views.py:126-145` |
@@ -454,8 +454,8 @@ The front-end formatters below use JavaScript semantics, and the backend reprodu
 | `fmtPct(n)` | `null` → `N/A`; `r = Math.round(n*100)/100`; integer → no decimals (`100%`), else `toFixed(2)` + `%` | all % displays | `format.js:26-30` |
 | `fmtMT(n)` | `null` → `—`; `toLocaleString('en-US', {maximumFractionDigits: 1}) + ' MT'` | hero, drill | `format.js:24` |
 | `qtyFmt(v)` | `toLocaleString('en-US', {min 1, max 1})` | product table | `format.js:34` |
-| `fmtAvgKg(n)` | `'$' + n.toFixed(3)` | hero | `format.js:40` |
-| `formatAvgPriceKg(v)` | 2 dp unless whole, `' /kg'` | chart tooltip | `format.js:67-70` |
+| `fmtAvgMt(n)` | `'$' + Math.round(Math.abs(n)).toLocaleString('en-US')` — whole dollars | hero | `format.js:40` |
+| `formatAvgPriceMt(v)` | whole dollars + `' /MT'`; `—` if null/non-finite | chart tooltip | `format.js:67-70` |
 | MoM text | `Math.abs(chg).toFixed(1)` with explicit `+`/`-`, arrow by `chg >= 0` | hero, month list | `views.js:185,408` |
 | Donut shares | `toFixed(1)` | donut, legend | `views.js:599,605` |
 | Product-mix % in period drill | `(share × 100).toFixed(0)` | drawer | `drillViews.js:103` |
@@ -530,9 +530,9 @@ All values from `GET /api/data?source=api&…` and the formatter rules of §6, d
 | Latest period 09.2026 | revenue 2,725,630.53 (FG 2,662,998.22, Other 62,632.31) | `$2.73M`; `$2.66M`; `$62.6K` |
 | Hero MoM | `(2,725,630.53 − 1,628,675.64)/1,628,675.64 = 67.35 %` | `▲ +67.4% MoM` |
 | Hero quantities (Sep) | 2,025.88 MT (FG 1,763.32; Other 262.56) | `2,025.9 MT` |
-| Avg price (Sep, FG) | `2,662,998.22 / (1,763.32 × 1000) = 1.5102` | `$1.510` |
+| Avg price (Sep, FG) | `2,662,998.22 / 1,763.32 = 1,510.2` | `$1,510 /MT` |
 | Margin card (FG, window) | revenue 13,838,245.24 · VC 9,924,405.59 · CM 3,913,839.65 · CM % 28.28 | `28.28%`, `$3.91M`; Sep: `27.46%`, `$731.2K` |
-| Donut | FG share 13,838,245.24 / 14,068,865.87 | `B2B/B2C 98.4%` |
+| Donut | last period = 09.2026 → `MOF[8]` = Sep | `Jan to Sep` |
 | Sections | FG: 12 products, 15 customers · Other: 6 products (By-products 3, Raw 1, Non-stock 2), 15 customers | |
 | Top products by revenue | 11000033 WFP Infant 15kg 6,321,967.07 (qty 4,281.53, VC 4,755,343.14, CM 1,566,623.93, 24.78 %) · 11000013 MoH Infant 18kg 3,987,767.96 (CM 36.69 %) · 11000018 CRS SC+ TENDER 1,322,872.67 (19.78 %) · 11000012 MoH Mother 18kg 1,192,616.14 (38.25 %) · 11000007 ICRC SC+ 10x1.5kg 698,035.50 (16.42 %) | |
 | Top customers | 1000000 WORLD FOOD PROGRAMME 6,321,967.07 (CM 1,566,623.93) · 1000001 NCDA 5,179,954.92 (CM 1,919,160.30) · 1000002 CRS 1,322,872.67 · 1000048 ICRC Mombasa Port 714,835.50 · 1000040 Rwanda Correctional Services 208,956.31 | |
@@ -564,7 +564,7 @@ Per-period (revenue / FG revenue / qty MT / FG qty / VC / CM / FG CM % / lines):
 | Other | revenue 66,697.25 · qty 556.31 |
 | Counts | documents 169 · batches 46 · orders 46 · products 15 · customers 23 |
 | Hero MoM (05 vs 04) | `(1,235,940.20 − 1,362,331.79)/1,362,331.79 = −9.28 %` → `▼ -9.3% MoM` |
-| Avg price (May, FG) | `1,225,103.71 / (835.12 × 1000) = 1.467` → `$1.467` |
+| Avg price (May, FG) | `1,225,103.71 / 835.12 = 1,467.0` → `$1,467 /MT` |
 | Margin card | CM % 30.41 · May 25.62 % |
 | Top product | 11000033 2,378,061.46; 11000013 1,334,064.22; 11000012 346,099.20; 11000018 219,589.74 |
 

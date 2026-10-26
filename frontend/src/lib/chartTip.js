@@ -1,7 +1,7 @@
 /* Hover/focus tooltip for the period chart — one handler for a column, its dot and its pill (matched by x position). Ported
    unchanged from the source dashboard (public/app.js chartTooltip); the geometry comes from getGeo() instead of module globals. */
-import { mLabel, esc, fmtPct, formatMoneyCompact, formatAvgPriceKg } from './format.js';
-import { fgOf, fgAvgKg } from './derive.js';
+import { mLabel, esc, fmtPct, formatMoneyCompact, formatAvgPriceMt } from './format.js';
+import { fgOf, fgAvgMt } from './derive.js';
 import { VC_DEF } from './copy.js';
 export function attachChartTooltip(svg, tip, getGeo) {
   const P = () => getGeo().pts, GEO = () => getGeo();
@@ -13,13 +13,13 @@ export function attachChartTooltip(svg, tip, getGeo) {
     const pg = fgOf(P()[i - 1]), q = g ? g.qtyMt : null;
     let chg = '';
     if (pg && pg.qtyMt && q != null) { const c = (q - pg.qtyMt) / Math.abs(pg.qtyMt) * 100; chg = `<div class="r"><span>QTY vs prev. month</span><b class="${c >= 0 ? 'up' : 'dn'}">${c >= 0 ? '▲' : '▼'} ${Math.abs(c).toFixed(1)}%</b></div>`; }
-    const kg = fgAvgKg(p);
+    const mt = fgAvgMt(p);
     tip.innerHTML = `<div class="th">${esc(mLabel(p.period))} · B2B/B2C${p.provisional ? ' <em>· open period</em>' : ''}</div>`
       + `<div class="r"><span>Revenue (B2B/B2C)</span><b>${g ? usd(g.revenue) : '—'}</b></div>`
       + `<div class="r"><span>Variable cost (B2B/B2C)</span><b>${g && g.cogm != null ? `${usd(g.cogm)} (${g.cogmPct != null ? fmtPct(g.cogmPct) : '—'})` : '—'}</b></div>`
       + `<div class="r"><span>Contribution margin (B2B/B2C)</span><b>${g && g.cm != null ? `${usd(g.cm)} (${g.cmPct != null ? fmtPct(g.cmPct) : '—'})` : '—'}</b></div>`
       + `<div class="r"><span>QTY (MT)</span><b>${q == null ? '—' : q.toLocaleString('en-US', { maximumFractionDigits: 1 })}</b></div>`
-      + `<div class="r"><span>Avg price</span><b>${formatAvgPriceKg(kg)}</b></div>` + chg
+      + `<div class="r"><span>Avg price</span><b>${formatAvgPriceMt(mt)}</b></div>` + chg
       + `<div class="fn">Finished Goods only. Excludes Others.<span class="vcdef">${esc(VC_DEF)}</span></div>`;
     tip.hidden = false; hl(i);
     // Sit beside the hovered column (right if there is room, else left) so it never covers that column or its

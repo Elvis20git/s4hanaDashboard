@@ -42,7 +42,7 @@ export const fgOf = p => (p && p.groups && p.groups.fg) || null;
 /** The figures the Margin — contribution card shows: Finished Goods only, in the shape marginBarsHtml takes. The same
     component is used by the product drawer, which passes its own (already FG-only) data instead. */
 export const fgView = p => { const g = fgOf(p); return g ? { revenue: g.revenue, cogm: g.cogm, cm: g.cm, cmPct: g.cmPct } : null; };
-export const fgAvgKg = p => { const g = fgOf(p); return g && g.qtyMt > 0 ? g.revenue / (g.qtyMt * 1000) : null; };
+export const fgAvgMt = p => { const g = fgOf(p); return g && g.qtyMt > 0 ? g.revenue / g.qtyMt : null; };
 
 /** Σ over the periods returned to the drill drawer; ratios come from summed $, never averaged %. */
 export function summarisePeriods(periods) {

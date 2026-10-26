@@ -37,7 +37,7 @@ export const mLabelFromDate = d => { if (!d) return '—'; const [y, m] = d.spli
 // Derived from a real Date, not a hardcoded lookup.
 export const monAbbr = period => new Date(+period.slice(3), +period.slice(0, 2) - 1, 1).toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
 export const yr2 = period => period.slice(5);
-export const fmtAvgKg = n => '$' + n.toFixed(3);
+export const fmtAvgMt = n => '$' + Math.round(Math.abs(n)).toLocaleString('en-US');
 
 /* ---- compact money for tooltips (was public/format.js) ---- */
 const r2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -63,8 +63,9 @@ export function formatMoneyCompact(value) {
   return (value < 0 && !zero ? '-' : '') + text;
 }
 
-/** Average price per kg with the same decimals rule: 1.51 -> "$1.51 /kg", 2 -> "$2 /kg". */
-export function formatAvgPriceKg(value) {
+/** Average price per MT in whole dollars: 1510.2 -> "$1,510 /MT". */
+export function formatAvgPriceMt(value) {
   if (value == null || !Number.isFinite(value)) return '—';
-  return (value < 0 && r2(Math.abs(value)) !== 0 ? '-' : '') + '$' + dec(Math.abs(value)) + ' /kg';
+  const rounded = Math.round(Math.abs(value));
+  return (value < 0 && rounded !== 0 ? '-' : '') + '$' + rounded.toLocaleString('en-US') + ' /MT';
 }
