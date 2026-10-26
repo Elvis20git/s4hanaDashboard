@@ -72,7 +72,7 @@ function CreateForm({ onCreated }) {
     setBusy(true);
     try {
       await api('/api/admin/users', { method: 'POST', body: JSON.stringify({ ...f, username: f.username.trim(), email: f.email.trim(), allowed_dashboards: superuser ? DASHBOARD_KEYS : f.allowed_dashboards }) });
-      toastOk(`User ${f.username.trim()} created.`);
+      toastOk(`User ${f.username.trim()} created — they must set a new password on first login.`);
       setF(blankForm()); onCreated();
     } catch (ex) {
       if (ex.field) setErrs({ [ex.field]: ex.message }); else toastErr(ex.message);
@@ -117,6 +117,7 @@ function MemberCard({ u, onEdit, onDeactivate }) {
           <span className={'adm-badge r-' + u.role.toLowerCase()}>{roleLabel(u.role)}</span>
           {u.is_data_steward ? <span className="adm-badge steward">Data Steward</span> : null}
           {inactive ? <span className="adm-badge inactive">Inactive</span> : null}
+          {u.must_change_password ? <span className="adm-badge otp">Temp password</span> : null}
         </div>
         <div className="adm-meta">@{u.username} · Last login {fmtLogin(u.last_login)}</div>
       </div>
@@ -163,6 +164,16 @@ function EditDrawer({ user, me, lastSuper, onClose, onSaved }) {
     } catch (ex) { toastErr(ex.message); }
     finally { setBusy(false); }
   };
+  const forceChange = async () => {
+    setBusy(true);
+    try {
+      await api(`/api/admin/users/${user.id}/force-password-change`, { method: 'POST', body: '{}' });
+      toastOk(`${user.username} will be required to change their password on next login.`);
+      await onSaved();
+      onClose();
+    } catch (ex) { toastErr(ex.message); }
+    finally { setBusy(false); }
+  };
   const why = isSelf ? 'You cannot deactivate or demote your own account.' : 'This is the last active superuser; it cannot be deactivated or demoted.';
   return (
     <>
@@ -186,6 +197,9 @@ function EditDrawer({ user, me, lastSuper, onClose, onSaved }) {
         <div className="adm-dr-f">
           <div className="adm-dr-left">
             <button type="button" className="adm-btn outline" disabled={busy || inactive} onClick={sendReset}>Send password reset email</button>
+            {!inactive && !user.must_change_password ? (
+              <button type="button" className="adm-btn outline" disabled={busy} onClick={forceChange}>Force password change</button>
+            ) : null}
             {inactive
               ? <button type="button" className="adm-btn outline" disabled={busy} onClick={() => act(() => api(`/api/admin/users/${user.id}/activate`, { method: 'POST', body: '{}' }), `${user.username} reactivated.`)}>Reactivate</button>
               : <button type="button" className="adm-btn danger-o" disabled={busy || protectedSuper} title={protectedSuper ? why : undefined} onClick={() => setConfirm('deactivate')}>Deactivate</button>}

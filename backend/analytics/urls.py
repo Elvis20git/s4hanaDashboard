@@ -15,6 +15,7 @@ urlpatterns = [
     path('api/admin/users', admin_views.users),
     path('api/admin/users/<str:user_id>', admin_views.user_detail),
     path('api/admin/users/<str:user_id>/activate', admin_views.user_activate),
+    path('api/admin/users/<str:user_id>/force-password-change', admin_views.user_force_password_change),
     path('api/admin/users/<str:user_id>/reset-password', admin_views.user_reset_password),
     # ---- data
     path('api/status', views.status),

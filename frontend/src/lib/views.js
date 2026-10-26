@@ -598,11 +598,17 @@ export function buildContribution(S, seed = {}) {
     ring += `<circle class="gring" data-g="${g.key}" cx="100" cy="100" r="${R2}" fill="none" stroke="${g.key === 'fg' ? '#1B7A54' : '#C9922E'}" stroke-width="3" stroke-dasharray="${shown} ${C2 - shown}" stroke-dashoffset="${-(o2 + gap / 2)}" transform="rotate(-90 100 100)"/>`;
     o2 += len;
   });
+  const firstPer = d.periods && d.periods.length ? d.periods[0] : null;
   const lastPer = d.periods && d.periods.length ? d.periods[d.periods.length - 1] : null;
+  const firstMon = firstPer ? MOF[+firstPer.period.slice(0, 2) - 1] : '—';
   const lastMon = lastPer ? MOF[+lastPer.period.slice(0, 2) - 1] : '—';
+  const isYtd = activePresetKey(d, S.from, S.to) === 'ytd';
+  $('donutTitle').textContent = isYtd
+    ? 'Revenue contribution by product-YTD'
+    : `Revenue contribution by product · ${scopeLabel()}`;
   $('donut').innerHTML = arcs + ring + `<text x="100" y="92" text-anchor="middle" class="num cn" data-v="${tot}" data-f="k" style="font-size:22px;font-weight:600;fill:var(--color-tx)">${fmtK(tot)}</text>`
     + `<text x="100" y="108" text-anchor="middle" style="font-size:9px;letter-spacing:.08em;fill:var(--color-tx-3);font-weight:600">NET REVENUE</text>`
-    + `<text x="100" y="122" text-anchor="middle" style="font-size:8.5px;fill:var(--color-tx-2);font-weight:600">Jan to ${lastMon}</text>`;
+    + `<text x="100" y="122" text-anchor="middle" style="font-size:8.5px;fill:var(--color-tx-2);font-weight:600">${firstMon} to ${lastMon}</text>`;
   // Legend: group titles carry the group's share of total revenue, item % is also share of total revenue.
   const item = (p, bl) => `<button type="button" class="dl" data-code="${p.code}" data-g="${bl.g}" data-cat="${bl.key}" title="${esc(segTip(p, groups.find(x => x.key === bl.g), bl))}"><span class="sw" style="background:${pal.get(p.code)}"></span><span class="nm">${esc(p.name)}</span><span class="pc">${cn(p.revenue / tot * 100, 'pc1')}</span></button>`;
   const legBtn = (key, cls, title, share, hl, tip) => `<button type="button" class="dlg ${cls}" data-k="leg:${key}" data-hl="${hl}" title="${esc(tip)}" aria-expanded="${!collapsed.has('leg:' + key)}">${chev(!collapsed.has('leg:' + key))}<span class="nm">${esc(title)}</span><span class="pc">${share.toFixed(1)}%</span></button>`;

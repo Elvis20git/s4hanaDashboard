@@ -88,7 +88,8 @@ def users(request):
         fields['allowed_dashboards'] = list(DASHBOARD_KEYS)
     try:
         with transaction.atomic():
-            u = User.objects.create(username=username, password_hash=security.hash_password(password), **fields)
+            u = User.objects.create(username=username, password_hash=security.hash_password(password),
+                                    must_change_password=True, **fields)
     except IntegrityError:
         return _err('A user with that username or email already exists.', None, 409)
     _log(request.aif_user, f'created role={u.role} steward={u.is_data_steward} dashboards={u.allowed_dashboards}', u)
@@ -145,6 +146,21 @@ def user_activate(request, user_id):
     target.status = 'ACTIVE'
     target.save(update_fields=['status', 'updated_at'])
     _log(request.aif_user, 'reactivated', target)
+    return jres({'success': True, 'user': services.admin_user(target)})
+
+
+@guard(superuser=True)
+def user_force_password_change(request, user_id):
+    if request.method != 'POST':
+        return _err('Method not allowed.', status=405)
+    target = User.objects.filter(id=user_id).first()
+    if target is None:
+        return _err('User not found.', status=404)
+    if target.status != 'ACTIVE':
+        return _err('Reactivate the user before requiring a password change.')
+    target.must_change_password = True
+    target.save(update_fields=['must_change_password', 'updated_at'])
+    _log(request.aif_user, 'forced password change', target)
     return jres({'success': True, 'user': services.admin_user(target)})
 
 

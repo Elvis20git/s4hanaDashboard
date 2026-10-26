@@ -57,7 +57,7 @@ export function MarginAndMix() {
           <Html as="div" className="wf" id="mgWf" html={mi('mgWf')} />
         </div>
         <div className="cbox live rise" ref={donutCardRef} style={{ animationDelay: '.28s' }}>
-          <div className="hd"><div className="t">Revenue contribution by product-YTD <HelpIcon k="donutCard" label="ⓘ" /></div><div className="d">Share of net revenue</div></div>
+          <div className="hd"><div className="t">{c.donutTitle ? c.donutTitle.textContent : 'Revenue contribution by product-YTD'} <HelpIcon k="donutCard" label="ⓘ" /></div><div className="d">Share of net revenue</div></div>
           <div className="donutwrap">
             <svg className="donut" id="donut" viewBox="0 0 200 200" ref={donutRef} onClick={onSegClick} dangerouslySetInnerHTML={{ __html: c.donut ? c.donut.innerHTML : '' }} />
             <div className="dlegend" id="dlegend" onClick={onLegendClick} onMouseOver={onLegendOver} onMouseOut={onLegendOut}

@@ -69,6 +69,7 @@ button.adm-stat:focus-visible,.adm-leg-b:focus-visible{outline:2px solid var(--c
 .adm-badge.r-superuser{background:#D8F3E3;color:#0E6B3C}.adm-badge.r-analyst{background:#DCE7FB;color:#2A4FA3}.adm-badge.r-viewer{background:var(--color-line-2);color:var(--color-tx-2)}
 .adm-badge.steward{background:var(--color-gold-soft);color:var(--color-gold-ink);border:1px solid var(--color-gold-line)}
 .adm-badge.inactive{background:var(--color-clay-soft);color:var(--color-clay)}.adm-badge.ok{background:#D8F3E3;color:#0E6B3C}
+.adm-badge.otp{background:#FFF0E0;color:#C05C00}
 .adm-pills{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:360px}
 .adm-pill{font-size:11px;font-weight:600;padding:3px 10px;border-radius:7px;background:var(--color-line-2);border:1px solid var(--color-line);color:var(--color-tx-2)}
 .adm-pill.all{background:#D8F3E3;color:#0E6B3C;border-color:#BFE5CF}
