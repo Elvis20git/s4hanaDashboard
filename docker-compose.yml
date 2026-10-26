@@ -1,0 +1,26 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8009:8000"
+    volumes:
+      - ./backend/config/.env:/app/config/.env:ro
+      - ./backend/data:/app/data:ro          # spreadsheet files
+      - validation_data:/app/validation      # generated dataset.json
+    environment:
+      DJANGO_DEBUG: "0"
+      TRUST_PROXY: "1"
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8007:80"
+    depends_on:
+      - backend
+
+volumes:
+  validation_data:

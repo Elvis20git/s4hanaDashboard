@@ -1,0 +1,12 @@
+.venv
+__pycache__
+*.pyc
+.git
+.gitignore
+config/.env
+db.sqlite3
+*.log
+cache/*.json
+validation/dataset.json
+seed/
+TEST_REPORT.md

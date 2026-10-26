@@ -118,8 +118,13 @@ def validation(request):
     if not s['data']:
         return jres({'error': f'The {src} source has not been loaded yet.'}, 503)
     d = s['data']
-    return jres({'source': src, 'asOf': d['asOf'], 'builtAt': d['builtAt'],
-                 'controls': d.get('controls') or {'note': 'Controls apply to the live API source only — the spreadsheet source carries no cost chain.'}})
+    controls = d.get('controls')
+    if not controls:
+        note = ('Controls require a live data refresh — click Refresh to generate them.'
+                if src == 'api'
+                else 'Validation controls apply to the live API source only — the spreadsheet source carries no cost chain.')
+        controls = {'note': note}
+    return jres({'source': src, 'asOf': d['asOf'], 'builtAt': d['builtAt'], 'controls': controls})
 
 
 @guard(dashboard=perm.SALES)
@@ -204,7 +209,7 @@ def refresh(request):
     if FIXTURE_DATASET:
         a = state['api']
         return jres({'ok': True, 'error': None, 'lastRefresh': a['lastRefresh'], 'log': a['log']})   # fixture mode: nothing to refresh
-    s = refresh_api()
+    s = refresh_api(user=request.aif_user)
     return jres({'ok': not s['error'], 'error': s['error'], 'lastRefresh': s['lastRefresh'], 'log': s['log']})
 
 
@@ -216,7 +221,7 @@ def spreadsheet_load(request):
         entries = [{'name': f['name'], 'path': str(Path(f['path']).resolve())} for f in (_body(request).get('files') or [])]
         if not entries:
             return jres({'error': 'No files given.'}, 400)
-        d = load_spreadsheets(entries)
+        d = load_spreadsheets(entries, user=request.aif_user)
         return jres({'ok': True, 'loaded': d['loaded'], 'counts': d['counts'], 'history': state['spreadsheet']['loadHistory']})
     except Exception as e:
         return jres({'error': redact(str(e))}, 400)

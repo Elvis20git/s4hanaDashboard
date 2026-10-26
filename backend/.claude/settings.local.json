@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Force)",
+      "Bash(Select-Object Name, FullName)",
+      "Bash(grep -v '__pycache__\\\\|\\\\.pyc$\\\\|node_modules')",
+      "Read(//mnt/c/**)",
+      "Read(//c/AIF_Dashboards//**)",
+      "Bash(grep -v '__pycache__\\\\|\\\\.pyc$\\\\|\\\\.git')",
+      "Bash(grep -v '__pycache__\\\\|\\\\.pyc$\\\\|\\\\.git\\\\|\\\\.venv')",
+      "Bash(xxd \"/c/AIF_Dashboards/AIF-VITE/backend/config/.env\")",
+      "Bash(.venv/Scripts/pip show *)",
+      "Bash(.venv/Scripts/pip install *)",
+      "Bash(AIF_NO_WARMUP=1 AIF_FIXTURE_DATASET=fixtures/dataset.json .venv/Scripts/python *)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(python *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\AIF_Dashboards\\\\AIF-VITE\\\\backend\" -Recurse -Directory | ForEach-Object { $_.FullName.Replace\\('C:\\\\AIF_Dashboards\\\\AIF-VITE\\\\backend', ''\\) } | Sort-Object)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\AIF_Dashboards\\\\AIF-VITE\\\\backend\" -Recurse -Directory | Where-Object { $_.FullName -notmatch '\\\\.venv' } | ForEach-Object { $_.FullName.Replace\\('C:\\\\AIF_Dashboards\\\\AIF-VITE\\\\backend', ''\\) } | Sort-Object)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\AIF_Dashboards\\\\AIF-VITE\\\\backend\" -Recurse -File | Where-Object { $_.FullName -notmatch '\\\\.venv' -and $_.FullName -notmatch '__pycache__' } | ForEach-Object { $_.FullName.Replace\\('C:\\\\AIF_Dashboards\\\\AIF-VITE\\\\backend', ''\\) } | Sort-Object)",
+      "Bash(pip install *)",
+      "PowerShell(New-Item *)",
+      "PowerShell(python -c \"import yaml; yaml.safe_load\\(open\\('C:/AIF_Dashboards/AIF-VITE/docker-compose.yml'\\)\\); print\\('YAML valid'\\)\" 2>&1)",
+      "PowerShell(pip install *)"
+    ]
+  }
+}

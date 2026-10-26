@@ -647,6 +647,7 @@ export function buildValidation(S, seed = {}) {
   const v = S.validation;
   if (!v) { $('valBody').innerHTML = `<div class="banner warn">Validation applies to the live API source. Switch the source to Live APIs to see the controls.</div>`; return out; }
   const c = v.controls;
+  if (!c || !c.reconciliation) { $('valBody').innerHTML = `<div class="banner warn">${(c && c.note) || 'Validation controls require a live data refresh — click <b>Refresh</b> in the Source &amp; load tab to generate them.'}</div>`; return out; }
   const card = (cls, l, val, d) => `<div class="vcard ${cls}"><div class="l">${l}</div><div class="v num">${val}</div><div class="d">${d}</div></div>`;
   let h = `<div class="vgrid">`
     + card(c.reconciliation.pass ? 'ok' : 'bad', 'Revenue reconciliation', c.reconciliation.pass ? 'Ties' : 'DIFFERENCE',
