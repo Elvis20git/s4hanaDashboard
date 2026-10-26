@@ -9,6 +9,8 @@ services:
       - ./backend/config/.env:/app/config/.env:ro
       - ./backend/data:/app/data:ro          # spreadsheet files
       - validation_data:/app/validation      # generated dataset.json
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       DJANGO_DEBUG: "0"
       TRUST_PROXY: "1"
