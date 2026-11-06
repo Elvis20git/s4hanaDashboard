@@ -6,9 +6,10 @@ services:
     ports:
       - "127.0.0.1:8009:8000"
     volumes:
-      - ./backend/config/.env:/app/config/.env:ro
+      - ./backend/config:/app/config         # .env (read by app) + period_overrides.json (written by app)
       - ./backend/data:/app/data:ro          # spreadsheet files
       - validation_data:/app/validation      # generated dataset.json
+      - cache_data:/app/cache                # first-load disk cache (survives restarts)
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
@@ -26,3 +27,4 @@ services:
 
 volumes:
   validation_data:
+  cache_data:
