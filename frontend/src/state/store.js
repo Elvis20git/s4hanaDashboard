@@ -19,9 +19,14 @@ export function pageFromHash(h) {
   return MODULES.some(m => m.route === first) ? first : first === 'validation' ? 'data' : 'overview';
 }
 
+function readLoadMode() {
+  try { const v = localStorage.getItem('aif.loadMode'); if (v === 'sequential' || v === 'concurrent') return v; } catch { /* storage blocked: default */ }
+  return 'concurrent';
+}
+
 let state = {
   source: 'api', from: null, to: null, preset: null,   // preset = the preset button the user last clicked (see activePresetKey)
-  status: null, data: null, monthData: null, priorPeriodData: null, validation: null, error: null,
+  status: null, periods: null, loadMode: readLoadMode(), data: null, monthData: null, priorPeriodData: null, validation: null, error: null,
   page: pageFromHash(typeof location !== 'undefined' ? location.hash.slice(1) : ''),
   dataTab: typeof location !== 'undefined' && location.hash.slice(1) === 'validation' ? 'validation' : 'source',
   flash: null,            // a transient status-dot message (a failed deep link, a refused action)
@@ -97,8 +102,51 @@ export async function loadData() {
       try { priorPeriodData = await api('/api/data?' + new URLSearchParams({ source: st.source, period: priorCode })); } catch { priorPeriodData = null; }
     }
   }
-  set({ from, to, data, error, validation, monthData, priorPeriodData, flash: null, dataLoading: false });
+  // Period statuses come from the ONE backend helper (periods.get_period_statuses); the panel and the "Data through" popover only render them.
+  const periods = await api('/api/periods?source=' + st.source).catch(() => null);
+  set({ from, to, data, error, validation, monthData, priorPeriodData, periods, flash: null, dataLoading: false });
 }
+
+/** How closed periods are read from SAP: all at once ('concurrent', faster) or 'sequential' (one by one). Remembered on this device. */
+export function setLoadMode(m) {
+  if (m !== 'concurrent' && m !== 'sequential') return;
+  set({ loadMode: m });
+  try { localStorage.setItem('aif.loadMode', m); } catch { /* per-device convenience only */ }
+}
+
+/** True while the live source is being loaded — at start-up (first load or newly closed months) or after Refresh / Load / Mark. */
+export const isLoading = st => {
+  const a = st.status && st.status.sources && st.status.sources.api;
+  return st.source === 'api' && !!a && !!(a.refreshing || a.warming);
+};
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/** Poll the status (which carries per-period progress) until the live load has finished. */
+export async function waitWhileLoading() {
+  while (isLoading(get())) { await sleep(1200); await loadStatus(); }
+}
+
+/** Start a load on the server (it runs in the background, so the page stays responsive and shows progress), wait for it, then reload
+    status + data so every card, the pill and the Periods panel agree. Throws the server's error if the load failed. */
+export async function runLoad(path, body = {}) {
+  const r = await api(path, { method: 'POST', body: JSON.stringify({ ...body, async: true, mode: get().loadMode }) });
+  await loadStatus();
+  await waitWhileLoading();
+  await loadData();
+  const err = get().status.sources.api.error;
+  if (err) throw new Error(err);
+  return r;
+}
+
+/** Mark a month 'Closed' / 'Open' by hand, or back to 'auto' (.env / calendar). The server then re-extracts so the window follows. */
+export const setPeriodStatus = (ym, status) => runLoad(`/api/periods/${ym}/status`, { status });
+
+/** Re-extract the live window for a closed month (read-only from SAP). */
+export const reloadPeriod = ym => runLoad(`/api/periods/${ym}/reload`);
+
+/** Refresh, or load every closed period, in the chosen mode. */
+export const refreshAll = () => runLoad('/api/refresh');
 
 /** A transient dot message outside the normal render cycle — shown until the next load recomputes the real state. */
 export function flashError(msg) { set({ flash: msg }); }

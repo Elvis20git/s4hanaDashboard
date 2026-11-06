@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { loadStatus, loadData, useAppState } from './state/store.js';
+import { loadStatus, loadData, waitWhileLoading, useAppState } from './state/store.js';
 import { go, openFromHash } from './state/nav.js';
 import { usePermissions } from './auth/auth.js';
 import { NoAccess } from './auth/NoAccess.jsx';
@@ -11,6 +11,7 @@ import { Admin } from './components/AdminUsers.jsx';
 import { Popover } from './components/Popover.jsx';
 import { DrillDrawer } from './components/DrillDrawer.jsx';
 import { ChatWidget } from './components/ChatWidget.jsx';
+import { LoadingIndicator } from './components/LoadingIndicator.jsx';
 
 /** The application shell: sidebar, the module-aware sticky filter bar, the pages, and the shared overlays (popover, drill-down
     drawer, assistant). It only mounts once the user is signed in (AuthGate). Start-up order is the source's: status, then data, then
@@ -27,6 +28,7 @@ export default function App() {
     window.addEventListener('hashchange', onHash);
     (async function init() {
       await loadStatus();
+      await waitWhileLoading();      // first load / newly closed months: the indicator below shows progress, then the data opens
       if (canSales) await loadData();
       const h = location.hash.slice(1);
       if (h.includes('/')) await openFromHash(h); else go(h || 'overview', false);
@@ -49,6 +51,7 @@ export default function App() {
             {noDashboards ? <NoAccess /> : (
               <>
                 <FilterBar />
+                <LoadingIndicator />
                 {canSales ? <Overview /> : null}
                 {perms.canViewRoute(st.page) ? <ComingSoon /> : null}
                 {perms.canView('data_management') ? <DataManagement /> : null}

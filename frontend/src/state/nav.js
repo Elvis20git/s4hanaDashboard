@@ -57,6 +57,14 @@ export const setDataTab = tab => set({ dataTab: tab });
 /** What a popover footer link does. Re-checks the user's authorization at click time, not only when the link was drawn. */
 export function statusAction(act) {
   if (!canOpenDataManagement(get().status)) return;
+  if (act === 'periods') {
+    go('data'); setDataTab('source');
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const el = document.getElementById('periodsPanel');
+      if (el) el.scrollIntoView({ behavior: RM() ? 'auto' : 'smooth', block: 'start' });
+    }));
+    return;
+  }
   if (act !== 'validation' && act !== 'validation:assumed-zero') return;
   go('data'); setDataTab('validation');
   if (act === 'validation:assumed-zero') {

@@ -8,7 +8,7 @@ import { HelpIcon } from './HelpIcon.jsx';
 const Html = ({ as: T = 'span', html, ...p }) => <T {...p} dangerouslySetInnerHTML={{ __html: html }} />;
 
 /** Section 3 — Margin — contribution (B2B/B2C, shared markup with the product drawer) and Revenue contribution by product (grouped
-    donut + legend). Section 4 — Profitability by product. */
+    donut + legend). Section 4 — Gross Profit by product. */
 export function MarginAndMix() {
   const st = useAppState();
   const m = useMemo(() => buildMargin(st), [st.data, st.from, st.to]);                  // eslint-disable-line react-hooks/exhaustive-deps
@@ -68,10 +68,10 @@ export function MarginAndMix() {
       </div>
 
       <div className="level rise" style={{ animationDelay: '.32s' }}>
-        <span className="n">4</span><span className="t">Profitability by product-YTD</span><span className="src" id="lvl3src">{c.lvl3src ? c.lvl3src.textContent : 'Actual VC'}</span><span className="ln" />
+        <span className="n">4</span><span className="t">Gross Profit by product-YTD</span><span className="src" id="lvl3src">{c.lvl3src ? c.lvl3src.textContent : 'Actual VC'}</span><span className="ln" />
       </div>
       <div className="cbox rise" style={{ animationDelay: '.34s' }}>
-        <div className="hd"><div className="t">Profitability by product-YTD</div><div className="d" id="profDetail">{c.profDetail ? c.profDetail.textContent : 'Click a row for the waterfall'}</div></div>
+        <div className="hd"><div className="t">Gross Profit by product-YTD</div><div className="d" id="profDetail">{c.profDetail ? c.profDetail.textContent : 'Click a row for the waterfall'}</div></div>
         <div className="prof-body"><table className="tbl" id="profTbl" onClick={onRowClick} dangerouslySetInnerHTML={{ __html: c.profTbl ? c.profTbl.innerHTML : '' }} /></div>
       </div>
     </>

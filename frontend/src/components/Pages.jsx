@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { MODULES } from '../lib/modules.js';
 import { esc } from '../lib/format.js';
 import { buildValidation } from '../lib/views.js';
-import { useAppState, api, loadStatus, loadData, setSource, flashError } from '../state/store.js';
+import { useAppState, api, loadStatus, setSource, flashError, refreshAll, isLoading } from '../state/store.js';
 import { usePermissions } from '../auth/auth.js';
 import { go, setDataTab } from '../state/nav.js';
 import { Icon } from './Icon.jsx';
+import { PeriodsPanel } from './PeriodsPanel.jsx';
 
 /* Coming-soon placeholder shared by every "soon" module. */
 export function ComingSoon() {
@@ -47,10 +48,11 @@ export function DataManagement() {
   const onTest = async () => { setTesting(true); try { await api('/api/connection-test'); } catch { /* shown by the status below */ } await loadStatus(); setTesting(false); };
   const onRefresh = async () => {
     setRefreshing(true);
-    try { await api('/api/refresh', { method: 'POST', body: '{}' }); await loadStatus(); await loadData(); }
-    catch (e) { flashError(`Refresh refused. ${e.message}`); }
+    try { await refreshAll(); }
+    catch (e) { flashError(`Refresh failed. ${e.message}`); }
     finally { setRefreshing(false); }
   };
+  const loading = isLoading(st);
   const val = useMemo(() => buildValidation(st), [st.validation, st.data, st.from, st.to]);   // eslint-disable-line react-hooks/exhaustive-deps
   const tab = st.dataTab;
   return (
@@ -73,12 +75,15 @@ export function DataManagement() {
             <span className="spacer" />
             <span className={connCls} id="connPill" title={(c && c.detail) || ''}><i />{connTxt}</span>
             <button className="btn" id="btnTest" onClick={onTest}>Test connection</button>
-            {isDataSteward ? <button className="btn" id="btnRefresh" disabled={refreshing} onClick={onRefresh}>{refreshing ? 'Refreshing…' : 'Refresh'}</button> : null}
+            {isDataSteward ? <button className="btn" id="btnRefresh" disabled={refreshing || loading} onClick={onRefresh}>{refreshing || loading ? 'Loading…' : 'Refresh'}</button> : null}
           </div>
         </div>
 
+        <div className="level"><span className="n">2</span><span className="t">Periods</span><span className="ln" /></div>
+        <PeriodsPanel />
+
         {isDataSteward ? (<>
-        <div className="level"><span className="n">2</span><span className="t">Load a SAP export</span><span className="ln" /></div>
+        <div className="level"><span className="n">3</span><span className="t">Load a SAP export</span><span className="ln" /></div>
         <div className="cbox" style={{ marginBottom: 16 }}>
           <div className="hd"><div className="t">Load a SAP export</div><div className="d">The file type is detected automatically — Excel exports only</div></div>
           <div style={{ padding: 16 }}>
@@ -91,7 +96,7 @@ export function DataManagement() {
           </div>
         </div>
         </>) : null}
-        <div className="level"><span className="n">3</span><span className="t">Load history</span><span className="src">Audit trail</span><span className="ln" /></div>
+        <div className="level"><span className="n">4</span><span className="t">Load history</span><span className="src">Audit trail</span><span className="ln" /></div>
         <div className="cbox"><div className="scroll">
           <table className="tbl" id="histTbl">
             <thead><tr><th>File</th><th>Loaded</th><th>Periods</th><th>Rows</th><th>Status</th></tr></thead>

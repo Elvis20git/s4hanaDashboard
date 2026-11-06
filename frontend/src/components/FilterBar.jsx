@@ -1,10 +1,11 @@
 import { MenuButton } from './MenuButton.jsx';
 import { useEffect, useRef } from 'react';
 import { MODULES, APP_NAME } from '../lib/modules.js';
-import { STATUS_COPY } from '../lib/copy.js';
+import { STATUS_COPY, canOpenDataManagement } from '../lib/copy.js';
 import { mLabel } from '../lib/format.js';
 import { presetsFor, activePresetKey, scopeLabel } from '../lib/derive.js';
 import { buildStatus } from '../lib/views.js';
+import { periodsPopover } from '../lib/periodsView.js';
 import { useAppState, setPreset, setFrom, setTo } from '../state/store.js';
 import { useStickyBar } from '../hooks/useStickyBar.js';
 
@@ -23,6 +24,7 @@ export function FilterBar() {
 
   const d = st.data;
   const status = buildStatus(st);
+  const pp = periodsPopover(st.periods), canLinkPeriods = canOpenDataManagement(st.status);
   const dotProps = key => {
     const o = status[key];
     // a transient message (a failed deep link, a refused action) takes over the red dot until the next load
@@ -67,10 +69,12 @@ export function FilterBar() {
             <span className="lbl">TO</span>
             <select className="sel" id="toSel" value={st.to || (d ? d.allPeriods.at(-1) : '')} onChange={e => setTo(e.target.value)}>{opts}</select>
           </div>
-          <span className="pill" id="dataThroughPill">
+          <button type="button" className="pill pill-btn" id="dataThroughPill" aria-haspopup="dialog" aria-expanded="false"
+            {...(pp ? { 'data-help-title': pp.title, 'data-help-body': pp.body, 'data-help-wide': '1',
+              ...(canLinkPeriods ? { 'data-help-links': JSON.stringify([{ label: 'Open the full Periods panel', act: 'periods' }]) } : {}) } : { disabled: true })}>
             <span className="live" id="dataThroughDot" style={{ background: status.dataThroughDot?.style.background || '' }} />
             Data through <b id="dataThroughVal">{status.dataThroughVal.textContent}</b>
-          </span>
+          </button>
           <button type="button" className="dotwrap warn" id="warnDot" aria-haspopup="dialog" aria-expanded="false" {...dotProps('warnDot')}><i className="sdot" /></button>
           <button type="button" className="dotwrap bad" id="errDot" aria-haspopup="dialog" aria-expanded="false" {...dotProps('errDot')}><i className="sdot" /></button>
         </div>

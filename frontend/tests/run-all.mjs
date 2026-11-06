@@ -1,7 +1,7 @@
 // Runs the front-end unit tests (money formatter, module registry). The backend rules (cost conversions, product grouping, overhead
 // rule, aggregation, auth) are tested in Python: npm run test:api. Cross-platform: no shell syntax.
 import { spawnSync } from 'node:child_process';
-const steps = ['tests/format.test.mjs', 'tests/modules.test.mjs', 'tests/teamstats.test.mjs'];
+const steps = ['tests/format.test.mjs', 'tests/modules.test.mjs', 'tests/teamstats.test.mjs', 'tests/periods.test.mjs'];
 let failed = 0;
 for (const f of steps) {
   const r = spawnSync(process.execPath, [f], { stdio: 'inherit' });
