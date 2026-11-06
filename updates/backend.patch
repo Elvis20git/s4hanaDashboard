@@ -1,0 +1,575 @@
+diff --git a/backend/.gitignore b/backend/.gitignore
+index 2b4ff59..b69a5a3 100644
+--- a/backend/.gitignore
++++ b/backend/.gitignore
+@@ -7,3 +7,4 @@ seed/users.local.json
+ db.sqlite3
+ .jwt_secret.local
+ config/Live API and Credentials.txt
++config/period_overrides.json
+diff --git a/backend/analytics/apps.py b/backend/analytics/apps.py
+index 12b3147..50415f7 100644
+--- a/backend/analytics/apps.py
++++ b/backend/analytics/apps.py
+@@ -24,4 +24,6 @@ class AnalyticsConfig(AppConfig):
+     def ready(self):
+         if _should_warm_up():
+             from .state import warm_up
++            from .state import state
++            state['api']['warming'] = True          # the UI shows "Loading data…" from the first request, before the thread has begun
+             threading.Thread(target=warm_up, name='aif-warm-up', daemon=True).start()
+diff --git a/backend/analytics/config.py b/backend/analytics/config.py
+index 61c73d6..f2b1813 100644
+--- a/backend/analytics/config.py
++++ b/backend/analytics/config.py
+@@ -34,7 +34,7 @@ def load_env(path):
+ FIXTURE_DATASET = Path(os.environ['AIF_FIXTURE_DATASET']).resolve() if os.environ.get('AIF_FIXTURE_DATASET') else None
+ FIXTURE_DIR = Path(os.environ['AIF_FIXTURE_DIR']).resolve() if os.environ.get('AIF_FIXTURE_DIR') else None
+ 
+-_SCOPE_KEYS = ['PORT', 'REPORT_TO', 'COMPANY_CODE', 'SALES_ORG', 'LEDGER', 'PERIOD_FROM', 'OVERHEAD_GL', 'BATCH_CHUNK']
++_SCOPE_KEYS = ['PORT', 'PERIOD_CLOSED', 'PERIOD_OPEN', 'LOAD_MODE', 'LOAD_WORKERS', 'COMPANY_CODE', 'SALES_ORG', 'LEDGER', 'PERIOD_FROM', 'OVERHEAD_GL', 'BATCH_CHUNK']
+ 
+ 
+ def _find_env():
+diff --git a/backend/analytics/pipeline/build.py b/backend/analytics/pipeline/build.py
+index ee09240..8e787f1 100644
+--- a/backend/analytics/pipeline/build.py
++++ b/backend/analytics/pipeline/build.py
+@@ -1,6 +1,7 @@
+ """Full pipeline: billing -> revenue (USD) -> batches -> order cost -> frozen unit cost -> COGM per (line,batch) -> contribution margin
+ -> controls. Every join to delivery, batch or order is a LEFT join (rule 1 — completeness)."""
+ import time
++from concurrent.futures import ThreadPoolExecutor
+ from datetime import datetime, timezone
+ 
+ from .. import sap
+@@ -8,40 +9,98 @@ from ..config import CFG
+ from ..cost import cache
+ from ..cost.engine import (apportion, cost_lines, freeze_unit_costs, make_is_final, order_costs, round2)
+ from ..jsutil import js_round, num, odata_date, to_fixed
++from ..periods import effective_cfg, kigali_today, last_day, month_range, window_end
+ from .controls import run_controls
+ 
+ KG_PER_MT = 1000
+ 
+ 
+ def _today():
+-    return datetime.now(timezone.utc).strftime('%Y-%m-%d')
++    return kigali_today()      # Africa/Kigali (UTC+2): "today" and month boundaries are the business's, not UTC's
+ 
+ 
+ def _period(d):
+     return d[5:7] + '.' + d[0:4]
+ 
+ 
+-def build(as_of=None, closure_as_of=None, log=None):
+-    """`as_of` is the reporting cutoff: the upper bound on BillingDocumentDate, i.e. what the dashboard actually shows. Capping it
+-    (via config REPORT_TO) removes a period from the dashboard completely — it is never fetched, not merely filtered client-side.
++def _extract_sales(frm, as_of, chunk, mode, workers, log, progress):
++    """Stages 1, 1b and 1c — everything read from SAP for the sales side — one task per closed month plus one for the revenue ledger.
++    `mode` 'concurrent' runs the tasks in a small thread pool (every call is a read-only GET); 'sequential' runs them one by one, in
++    order. Both return the same data: results are gathered in month order, so downstream joins see the same sequence either way.
++    The cost side (batches, orders) is NOT here — it spans months and runs once afterwards over all lines."""
++    months = [(ym, max(frm, ym + '-01'), min(as_of, last_day(ym))) for ym in month_range(frm, as_of)]
++
++    def month_task(ym, start, end):
++        progress('period', ym, 'loading')
++        try:
++            hdrs_all = sap.get_all('billing', 'A_BillingDocument', {
++                '$filter': f"SalesOrganization eq '{CFG['SALES_ORG']}' and CompanyCode eq '{CFG['COMPANY_CODE']}'"
++                           f" and BillingDocumentDate ge datetime'{start}T00:00:00'"
++                           f" and BillingDocumentDate le datetime'{end}T00:00:00'",
++                '$select': 'BillingDocument,BillingDocumentDate,BillingDocumentType,BillingDocumentIsCancelled,'
++                           'CancelledBillingDocument,SoldToParty,AccountingDocument,FiscalYear,CompanyCode,'
++                           'AccountingPostingStatus,TransactionCurrency',
++            }, page=5000)
++            posted = [h for h in hdrs_all if h.get('AccountingPostingStatus') == 'C']
++            items_all = sap.get_by_keys('billing', 'A_BillingDocumentItem', 'BillingDocument', [h['BillingDocument'] for h in posted],
++                                        chunk=chunk, params={
++                '$select': 'BillingDocument,BillingDocumentItem,Material,Batch,Plant,BillingQuantity,'
++                           'BillingQuantityUnit,BillingQuantityInBaseUnit,BaseUnit,NetAmount,TransactionCurrency,'
++                           'ReferenceSDDocument,ReferenceSDDocumentItem,SalesDocument'})
++        except Exception:
++            progress('period', ym, 'error')
++            raise
++        progress('period', ym, 'done')
++        return hdrs_all, items_all
++
++    def journal_task():
++        progress('journal', '', 'loading')
++        try:
++            rows = sap.get_all('journal', 'YY1_AIF_JOURNAL_REV', {
++                '$filter': f"Ledger eq '{CFG['LEDGER']}' and CompanyCode eq '{CFG['COMPANY_CODE']}' and startswith(GLAccount,'41')",
++            }, page=5000)
++        except Exception:
++            progress('journal', '', 'error')
++            raise
++        progress('journal', '', 'done')
++        return rows
++
++    tasks = [journal_task] + [(lambda m=m: month_task(*m)) for m in months]       # the ledger first: it is the longest single read
++    log(f"extracting {len(months)} period(s) {'concurrently, up to ' + str(workers) + ' at a time' if mode == 'concurrent' else 'one by one'}")
++    if mode == 'sequential':
++        results = [t() for t in tasks]
++    else:
++        with ThreadPoolExecutor(max_workers=max(1, workers)) as ex:
++            futures = [ex.submit(t) for t in tasks]
++            results = [f.result() for f in futures]
++    jrev_all = results[0]
++    hdrs_all = [h for r in results[1:] for h in r[0]]
++    items_all = [i for r in results[1:] for i in r[1]]
++    return hdrs_all, items_all, jrev_all
++
++
++def build(as_of=None, closure_as_of=None, log=None, mode=None, workers=None, progress=None):
++    """`as_of` is the reporting cutoff: the upper bound on BillingDocumentDate, i.e. what the dashboard actually shows. It is DERIVED on
++    every build — the last day of the latest closed period (periods.window_end: config override, else the Kigali calendar rule) — so an
++    open month is never fetched and a newly closed month is picked up by the next refresh. There is no stored end date.
+     `closure_as_of` is the REAL current date, used only to decide whether a batch's feeding orders are still open."""
+-    as_of = as_of or CFG.get('REPORT_TO') or _today()
+-    closure_as_of = closure_as_of or _today()
+     log = log or (lambda m: None)
+     started = time.time()
+     frm = CFG['PERIOD_FROM']
++    if CFG.get('REPORT_TO'):
++        log('NOTE: REPORT_TO is no longer used — the window end is derived from closed periods. Remove it from .env.')
++    as_of = as_of or window_end(frm, cfg=effective_cfg(CFG))
++    if not as_of:
++        raise RuntimeError(f'No closed period on or after {frm} — nothing to report yet.')
++    closure_as_of = closure_as_of or _today()
+     chunk = int(CFG.get('BATCH_CHUNK') or 50)
+     log(f'scope {frm} .. {as_of}' + (f' (period-closure evaluated as of {closure_as_of})' if closure_as_of != as_of else ''))
+ 
+-    # ---------- Stage 1: billing documents in scope ----------
+-    hdrs_all = sap.get_all('billing', 'A_BillingDocument', {
+-        '$filter': f"SalesOrganization eq '{CFG['SALES_ORG']}' and CompanyCode eq '{CFG['COMPANY_CODE']}'"
+-                   f" and BillingDocumentDate ge datetime'{frm}T00:00:00'"
+-                   f" and BillingDocumentDate le datetime'{as_of}T00:00:00'",
+-        '$select': 'BillingDocument,BillingDocumentDate,BillingDocumentType,BillingDocumentIsCancelled,'
+-                   'CancelledBillingDocument,SoldToParty,AccountingDocument,FiscalYear,CompanyCode,'
+-                   'AccountingPostingStatus,TransactionCurrency',
+-    }, page=5000)
++    # ---------- Stage 1 / 1b / 1c: billing documents, their items and the revenue ledger — per month, in the chosen mode ----------
++    mode = mode or CFG.get('LOAD_MODE') or 'concurrent'
++    workers = workers or int(CFG.get('LOAD_WORKERS') or 4)
++    progress = progress or (lambda kind, key, status: None)
++    hdrs_all, items_all, jrev_all = _extract_sales(frm, as_of, chunk, mode, workers, log, progress)
+     hdrs = [h for h in hdrs_all if h.get('AccountingPostingStatus') == 'C']
+     log(f'billing documents: {len(hdrs_all)} retrieved, {len(hdrs)} posted to accounting')
+ 
+@@ -51,12 +110,7 @@ def build(as_of=None, closure_as_of=None, log=None):
+     by_acct = {acct_key(h): h for h in hdrs}
+     by_doc = {h['BillingDocument']: h for h in hdrs}
+ 
+-    # ---------- Stage 1b: billing items (these carry the batch split) ----------
+-    items_all = sap.get_by_keys('billing', 'A_BillingDocumentItem', 'BillingDocument', [h['BillingDocument'] for h in hdrs],
+-                                chunk=chunk, params={
+-        '$select': 'BillingDocument,BillingDocumentItem,Material,Batch,Plant,BillingQuantity,'
+-                   'BillingQuantityUnit,BillingQuantityInBaseUnit,BaseUnit,NetAmount,TransactionCurrency,'
+-                   'ReferenceSDDocument,ReferenceSDDocumentItem,SalesDocument'})
++    # ---------- billing items (these carry the batch split) ----------
+     # Split parents carry zero quantity AND zero value. They contribute nothing and would double-count the document if kept.
+     items = [i for i in items_all if num(i.get('BillingQuantityInBaseUnit')) != 0 or num(i.get('NetAmount')) != 0]
+     log(f'billing items: {len(items_all)} ({len(items_all) - len(items)} zero-value split parents set aside)')
+@@ -81,9 +135,6 @@ def build(as_of=None, closure_as_of=None, log=None):
+     # ---------- Stage 1c: revenue in GLOBAL CURRENCY from the ledger ----------
+     # Revenue originates from the billing document set (rule 6). The ledger supplies the USD valuation because the billing API
+     # exposes transaction currency only.
+-    jrev_all = sap.get_all('journal', 'YY1_AIF_JOURNAL_REV', {
+-        '$filter': f"Ledger eq '{CFG['LEDGER']}' and CompanyCode eq '{CFG['COMPANY_CODE']}' and startswith(GLAccount,'41')",
+-    }, page=5000)
+     jrev = []
+     for r in jrev_all:
+         d = odata_date(r.get('PostingDate'))
+@@ -138,6 +189,7 @@ def build(as_of=None, closure_as_of=None, log=None):
+         })
+     log(f"lines assembled: {len(lines)} ({sum(1 for l in lines if not l['itemResolved'])} without a billing-item match)")
+ 
++    progress('phase', 'costing', 'running')
+     # ---------- Stage 2: batches sold, and the orders behind them ----------
+     sold_set = set(l['batch'] for l in lines if l['batch'])
+     log(f'distinct batches sold: {len(sold_set)}')
+diff --git a/backend/analytics/pipeline/controls.py b/backend/analytics/pipeline/controls.py
+index bd26a9e..1d865a4 100644
+--- a/backend/analytics/pipeline/controls.py
++++ b/backend/analytics/pipeline/controls.py
+@@ -16,7 +16,7 @@ REGRESSION = {
+     '01.2026': [816326.03, 31], '02.2026': [469566.78, 104], '03.2026': [2056492.74, 96],
+     '04.2026': [1362331.79, 75], '05.2026': [1235940.20, 61], '06.2026': [1886271.46, 76],
+     '07.2026': [1887630.70, 84], '08.2026': [1628675.64, 62], '09.2026': [2725630.53, 106],
+-    '10.2026': [728937.90, 19],
++    '10.2026': [2008956.72, 73],   # snapshot 2026-11-06 (October closed); replaces the 15 Oct figure (19 lines, 728,937.90)
+ }
+ 
+ 
+diff --git a/backend/analytics/state.py b/backend/analytics/state.py
+index 216b723..7f67ff5 100644
+--- a/backend/analytics/state.py
++++ b/backend/analytics/state.py
+@@ -7,15 +7,19 @@ from datetime import datetime, timezone
+ from pathlib import Path
+ 
+ from .config import BASE_DIR, CFG, FIXTURE_DATASET, VALIDATION_DIR, redact
++from . import datacache
++from .periods import _ym, effective_cfg, get_period_statuses, month_range, window_end
+ from .pipeline.build import build
+ from .pipeline.spreadsheet import build_from_files
+ 
+ state = {
+-    'api': {'data': None, 'error': None, 'lastRefresh': None, 'refreshing': False, 'log': []},
+-    'spreadsheet': {'data': None, 'error': None, 'lastRefresh': None, 'loadHistory': []},
++    'api': {'data': None, 'error': None, 'lastRefresh': None, 'refreshing': False, 'warming': False, 'log': [], 'periodLoadedAt': {},
++            'periodErrors': {}, 'progress': None, 'fromCache': False, 'cachedAt': None},
++    'spreadsheet': {'data': None, 'error': None, 'lastRefresh': None, 'loadHistory': [], 'periodLoadedAt': {}, 'periodErrors': {}},
+     'connection': {'ok': None, 'checkedAt': None, 'detail': None},
+ }
+ _refresh_lock = threading.Lock()
++_progress_lock = threading.Lock()
+ 
+ # The two spreadsheet extracts warmed at start-up, looked up in AIF_SPREADSHEET_DIR, then backend/data/.
+ DEFAULT_SPREADSHEETS = [
+@@ -30,11 +34,13 @@ def iso_now():
+ 
+ 
+ def cap_to_report_window(data):
+-    """`REPORT_TO` removes a period from the dashboard completely, regardless of which source serves it. build() already applies it
+-    inside the SAP query for the live API source, but a spreadsheet's full contents are read as given — this is the one place both
+-    sources pass through before being stored, so a cutoff set here can never be bypassed by switching source."""
+-    cutoff = CFG.get('REPORT_TO')
+-    if not cutoff or not data or 'lines' not in data:
++    """The window end is derived (periods.window_end), never stored. build() applies it inside the SAP query for the live API source,
++    but a spreadsheet's full contents are read as given — this is the one place both sources pass through before being stored, so an
++    open month can never reach the dashboard by switching source."""
++    if not data or 'lines' not in data:
++        return data
++    cutoff = window_end(data.get('from') or CFG['PERIOD_FROM'], cfg=effective_cfg(CFG))
++    if not cutoff:
+         return data
+ 
+     def pkey(p):
+@@ -58,25 +64,94 @@ def cap_to_report_window(data):
+     return out
+ 
+ 
+-def refresh_api():
++def period_statuses(src='api', now=None):
++    """The shared status of every month for a source — used by the Periods panel, the "Data through" popover and the refresh."""
++    s = state[src]
++    d = s['data'] or {}
++    frm = d.get('from') or CFG['PERIOD_FROM']
++    return get_period_statuses(lines=d.get('lines') or [], frm=frm, now=now, cfg=effective_cfg(CFG), controls=d.get('controls'), frozen=d.get('frozen'),
++                               loaded_at=s.get('periodLoadedAt'), errors=s.get('periodErrors'))
++
++
++def _scope_months():
++    frm = CFG['PERIOD_FROM']
++    end = window_end(frm, cfg=effective_cfg(CFG))
++    return month_range(frm, end[:7]) if end else []
++
++
++def _begin(mode, reason):
++    """Claim the single loader. Returns False if a load is already running (never two at once)."""
+     api = state['api']
+     if not _refresh_lock.acquire(blocking=False):
+-        return api
++        return False
++    months = _scope_months()
++    mode = mode if mode in ('concurrent', 'sequential') else (CFG.get('LOAD_MODE') or 'concurrent')
+     api['refreshing'] = True
+     api['log'] = []
++    api['progress'] = {'phase': 'extracting', 'mode': mode, 'reason': reason, 'startedAt': iso_now(), 'finishedAt': None,
++                       'total': len(months) + 1, 'done': 0, 'journal': 'pending', 'periods': {m: 'pending' for m in months}}
++    return True
++
++
++def _progress(kind, key, status):
++    api = state['api']
++    with _progress_lock:
++        p = api['progress']
++        if kind == 'period':
++            p['periods'][key] = status
++        elif kind == 'journal':
++            p['journal'] = status
++        elif kind == 'phase':
++            p['phase'] = key
++        p['done'] = sum(1 for v in p['periods'].values() if v == 'done') + (1 if p['journal'] == 'done' else 0)
++
++
++def _run(reason):
++    """Extract the closed window from SAP (read-only), then store, cache and record it. Caller holds the loader (see _begin)."""
++    api = state['api']
+     try:
+-        data = cap_to_report_window(build(log=api['log'].append))
++        # 1. the window is re-derived from the period statuses inside build(); 2. extract (per month, in the chosen mode); 3. cost + controls
++        data = cap_to_report_window(build(log=api['log'].append, mode=api['progress']['mode'], progress=_progress))
+         api['data'] = data
+         api['error'] = None
+         api['lastRefresh'] = iso_now()
++        loaded = sorted({_ym(l['period']) for l in data['lines']})
++        api['periodLoadedAt'] = {p: api['lastRefresh'] for p in loaded}
++        api['periodErrors'] = {}
++        api['fromCache'], api['cachedAt'] = False, None
++        api['log'].append(f"window {data['from']} → {data['asOf']} · {len(loaded)} period(s) loaded")
+         VALIDATION_DIR.mkdir(parents=True, exist_ok=True)
+         (VALIDATION_DIR / 'dataset.json').write_text(json.dumps(data), encoding='utf-8')
++        try:
++            datacache.save(data, {'lastRefresh': api['lastRefresh'], 'periodLoadedAt': api['periodLoadedAt'],
++                                  'mode': api['progress']['mode'], 'reason': reason})
++        except Exception as e:       # a cache that cannot be written must never fail the load itself
++            api['log'].append('cache not saved: ' + redact(str(e)))
++        api['progress']['phase'] = 'done'
+     except Exception as e:  # surfaced to the UI as "Data unavailable"
+         api['error'] = redact(str(e) or repr(e))
++        api['periodErrors'] = {r['period']: api['error'] for r in period_statuses('api')['rows'] if r['closeStatus'] == 'Closed'}
++        api['progress']['phase'] = 'error'
+     finally:
++        api['progress']['finishedAt'] = iso_now()
+         api['refreshing'] = False
+         _refresh_lock.release()
+-    return api
++
++
++def refresh_api(mode=None, reason='refresh'):
++    """Blocking load (start-up, tests, scripts). The web UI uses start_refresh so the page stays responsive."""
++    if _begin(mode, reason):
++        _run(reason)
++    return state['api']
++
++
++def start_refresh(mode=None, reason='refresh'):
++    """Non-blocking load: returns at once; the work runs in a background thread and is reported through state['api']['progress'].
++    Returns False if a load is already running."""
++    if not _begin(mode, reason):
++        return False
++    threading.Thread(target=_run, args=(reason,), name='aif-load', daemon=True).start()
++    return True
+ 
+ 
+ def load_spreadsheets(entries):
+@@ -89,6 +164,7 @@ def load_spreadsheets(entries):
+     ss['data'] = data
+     ss['lastRefresh'] = iso_now()
+     ss['error'] = None
++    ss['periodLoadedAt'] = {p: ss['lastRefresh'] for p in sorted({_ym(l['period']) for l in data['lines']})}
+     for l in data['loaded']:
+         ss['loadHistory'].insert(0, {
+             'file': l['file'], 'kind': l['kind'], 'rows': l['rows'],
+@@ -112,30 +188,47 @@ def _find_default_files():
+ 
+ 
+ def warm_up():
+-    """Warm both sources so the dashboard opens with data ."""
++    """Open with every closed period loaded. First run: load them all from SAP (the UI shows "Loading data…") and cache the result.
++    Later runs: open from that cache at once and read nothing from SAP until Refresh — except a month that has closed since the cache
++    was written, which is loaded now. Runs in a background thread so the server answers immediately."""
+     from . import sap
++    api = state['api']
++    api['warming'] = True
+     try:
+-        load_spreadsheets(_find_default_files())
+-        print('  spreadsheet source loaded')
+-    except Exception as e:
+-        state['spreadsheet']['error'] = redact(str(e))
+-        print('  spreadsheet source failed:', state['spreadsheet']['error'])
+-    if FIXTURE_DATASET:
+         try:
+-            data = json.loads(Path(FIXTURE_DATASET).read_text(encoding='utf-8'))
+-            state['api'].update(data=data, error=None, lastRefresh=data.get('builtAt') or iso_now())
+-            state['connection'] = {'ok': True, 'checkedAt': iso_now(), 'detail': 'Fixture dataset — no SAP connection (test mode)'}
+-            print('  FIXTURE MODE — dataset loaded from', FIXTURE_DATASET)
++            load_spreadsheets(_find_default_files())
++            print('  spreadsheet source loaded')
+         except Exception as e:
+-            state['api']['error'] = redact(str(e))
+-            print('  fixture load failed:', state['api']['error'])
+-        return
+-    try:
+-        xml = sap.metadata('journal')
+-        state['connection'] = {'ok': True, 'checkedAt': iso_now(), 'detail': f'Connected — {len(xml)} bytes of metadata.'}
+-        print('  SAP connection OK — building live dataset…')
+-        refresh_api()
+-        print(f"  live build FAILED: {state['api']['error']}" if state['api']['error'] else '  live dataset ready')
+-    except Exception as e:
+-        state['connection'] = {'ok': False, 'checkedAt': iso_now(), 'detail': redact(str(e))}
+-        print('  SAP connection failed:', state['connection']['detail'])
++            state['spreadsheet']['error'] = redact(str(e))
++            print('  spreadsheet source failed:', state['spreadsheet']['error'])
++        if FIXTURE_DATASET:
++            try:
++                data = json.loads(Path(FIXTURE_DATASET).read_text(encoding='utf-8'))
++                api.update(data=data, error=None, lastRefresh=data.get('builtAt') or iso_now())
++                state['connection'] = {'ok': True, 'checkedAt': iso_now(), 'detail': 'Fixture dataset — no SAP connection (test mode)'}
++                print('  FIXTURE MODE — dataset loaded from', FIXTURE_DATASET)
++            except Exception as e:
++                api['error'] = redact(str(e))
++                print('  fixture load failed:', api['error'])
++            return
++        cached = datacache.load()
++        if cached:
++            data, meta = cached
++            api.update(data=data, error=None, lastRefresh=meta.get('lastRefresh'), fromCache=True, cachedAt=meta.get('savedAt'),
++                       periodLoadedAt=meta.get('periodLoadedAt') or {}, periodErrors={})
++            print(f"  live dataset opened from cache (saved {meta.get('savedAt')}) — no SAP read until Refresh")
++        try:
++            xml = sap.metadata('journal')
++            state['connection'] = {'ok': True, 'checkedAt': iso_now(), 'detail': f'Connected — {len(xml)} bytes of metadata.'}
++        except Exception as e:
++            state['connection'] = {'ok': False, 'checkedAt': iso_now(), 'detail': redact(str(e))}
++            print('  SAP connection failed:', state['connection']['detail'])
++            return
++        missing = [r['label'] for r in period_statuses('api')['rows'] if r['closeStatus'] == 'Closed' and r['loaded'] == 'No'] if cached else []
++        if cached and not missing:
++            return
++        print('  SAP connection OK — ' + (f"loading newly closed period(s): {', '.join(missing)}" if cached else 'first load, building live dataset…'))
++        refresh_api(reason='startup' if not cached else 'startup: newly closed ' + ', '.join(missing))
++        print(f"  live build FAILED: {api['error']}" if api['error'] else '  live dataset ready (cached for next start)')
++    finally:
++        api['warming'] = False
+diff --git a/backend/analytics/urls.py b/backend/analytics/urls.py
+index 1c31dae..9088223 100644
+--- a/backend/analytics/urls.py
++++ b/backend/analytics/urls.py
+@@ -25,6 +25,9 @@ urlpatterns = [
+     path('api/batch/<str:batch_id>', views.batch),
+     path('api/order/<str:order_id>', views.order),
+     path('api/refresh', views.refresh),
++    path('api/periods', views.periods),
++    path('api/periods/<str:period>/reload', views.period_reload),
++    path('api/periods/<str:period>/status', views.period_status_set),
+     path('api/spreadsheet/load', views.spreadsheet_load),
+     path('api/load-history', views.load_history),
+     path('api/chat', views.chat),
+diff --git a/backend/analytics/views.py b/backend/analytics/views.py
+index a6e09db..f2fbfc0 100644
+--- a/backend/analytics/views.py
++++ b/backend/analytics/views.py
+@@ -13,10 +13,11 @@ from .config import CFG, FIXTURE_DATASET, FIXTURE_DIR, redact
+ from .cost import cache as cost_cache
+ from .http import body_json as _body, jres
+ from .jsutil import round2
++from .periods import effective_cfg, read_overrides, set_override, window_end
+ from .pipeline import chat as chat_mod
+ from .pipeline.aggregate import aggregate
+ from .pipeline.modetail import link_for, order_cost_detail
+-from .state import iso_now, load_spreadsheets, refresh_api, state
++from .state import iso_now, load_spreadsheets, period_statuses, refresh_api, start_refresh, state
+ 
+ 
+ # ---------------------------------------------------------------- helpers
+@@ -63,7 +64,8 @@ def status(request):
+         'connection': conn,
+         'sources': {
+             'api': {'available': bool(api['data']), 'error': api['error'] if dm else None, 'refreshing': api['refreshing'],
+-                    'lastRefresh': api['lastRefresh'],
++                    'lastRefresh': api['lastRefresh'], 'warming': api['warming'], 'progress': api['progress'],
++                    'fromCache': api['fromCache'], 'cachedAt': api['cachedAt'], 'loadMode': CFG.get('LOAD_MODE') or 'concurrent',
+                     'periodFrom': api['data']['from'] if api['data'] else None, 'periodTo': api['data']['asOf'] if api['data'] else None,
+                     'cogmAvailable': True, 'log': api['log'] if dm else []},
+             'spreadsheet': {'available': bool(ss['data']), 'error': ss['error'] if dm else None, 'lastRefresh': ss['lastRefresh'],
+@@ -201,13 +203,83 @@ def order(request, order_id):
+ def refresh(request):
+     if request.method != 'POST':
+         return jres({'error': 'Method not allowed'}, 405)
++    body = _body(request)
++    mode = body.get('mode')
+     if FIXTURE_DATASET:
+         a = state['api']
+         return jres({'ok': True, 'error': None, 'lastRefresh': a['lastRefresh'], 'log': a['log']})   # fixture mode: nothing to refresh
+-    s = refresh_api()
++    if body.get('async'):
++        # returns at once; the UI follows progress through /api/status
++        return jres({'ok': True, 'started': start_refresh(mode, 'refresh'), 'running': state['api']['refreshing']})
++    s = refresh_api(mode)
+     return jres({'ok': not s['error'], 'error': s['error'], 'lastRefresh': s['lastRefresh'], 'log': s['log']})
+ 
+ 
++@guard(dashboard=perm.SALES)
++def periods(request):
++    """Status of every month in the window (shared helper periods.get_period_statuses). Error text is Data Management detail."""
++    out = period_statuses(_src(request))
++    dm = perm.can_view(request.aif_user, perm.DATA_MANAGEMENT)
++    ov = read_overrides() if dm else {}
++    for r in out['rows']:
++        r['override'] = ov.get(r['period'])      # {status, by, at} when someone set it by hand in the panel
++    if not dm:
++        for r in out['rows']:
++            r['error'] = None
++            if r['badge'] == 'red':
++                r['reason'] = 'Closed but not loaded'
++    return jres({'source': _src(request), **out})
++
++
++@guard(dashboard=perm.DATA_MANAGEMENT, steward=True)
++def period_reload(request, period):
++    """Re-extract one closed month (read-only from SAP). Batch cost is linked across months (a batch sold in Jan was made in Dec), so the
++    live window is re-extracted as a whole and every month's status is re-evaluated; the response reports the requested month."""
++    if request.method != 'POST':
++        return jres({'error': 'Method not allowed'}, 405)
++    row = next((r for r in period_statuses('api')['rows'] if r['period'] == period), None)
++    if not row:
++        return jres({'error': f'{period} is outside the reporting window.'}, 404)
++    if row['closeStatus'] != 'Closed':
++        return jres({'error': f"{row['label']} is not closed — open periods are excluded until month-end close."}, 409)
++    body = _body(request)
++    if body.get('async') and not FIXTURE_DATASET:
++        return jres({'ok': True, 'started': start_refresh(body.get('mode'), f'reload {period}'), 'running': state['api']['refreshing']})
++    if not FIXTURE_DATASET:
++        refresh_api(body.get('mode'), f'reload {period}')
++    out = period_statuses('api')
++    return jres({'ok': not state['api']['error'], 'error': state['api']['error'], 'period': next(r for r in out['rows'] if r['period'] == period),
++                 'summary': out['summary'], 'log': state['api']['log']})
++
++
++@guard(dashboard=perm.DATA_MANAGEMENT, steward=True)
++def period_status_set(request, period):
++    """Mark a month Closed or Open by hand (or back to 'auto'), then re-extract so the window, the cards and the panel follow.
++    SAP is only ever read. The change and who made it are kept in config/period_overrides.json."""
++    if request.method != 'POST':
++        return jres({'error': 'Method not allowed'}, 405)
++    body = _body(request)
++    status = body.get('status')
++    if status not in ('Closed', 'Open', 'auto'):
++        return jres({'error': "status must be 'Closed', 'Open' or 'auto'."}, 400)
++    before = period_statuses('api')
++    if not any(r['period'] == period for r in before['rows']):
++        return jres({'error': f'{period} is outside the reporting window.'}, 404)
++    proposed = {k: v for k, v in read_overrides().items() if k != period}
++    if status != 'auto':
++        proposed[period] = {'status': status}
++    if not window_end(CFG['PERIOD_FROM'], cfg=effective_cfg(CFG, proposed)):
++        return jres({'error': 'That would leave no closed period, so there would be nothing to report. Change refused.'}, 409)
++    set_override(period, status, request.aif_user.username)
++    if body.get('async') and not FIXTURE_DATASET:
++        return jres({'ok': True, 'started': start_refresh(body.get('mode'), f'{period} marked {status}'), 'running': state['api']['refreshing']})
++    if not FIXTURE_DATASET:
++        refresh_api(body.get('mode'), f'{period} marked {status}')
++    out = period_statuses('api')
++    return jres({'ok': not state['api']['error'], 'error': state['api']['error'], 'period': next(r for r in out['rows'] if r['period'] == period),
++                 'summary': out['summary'], 'log': state['api']['log']})
++
++
+ @guard(dashboard=perm.DATA_MANAGEMENT, steward=True)
+ def spreadsheet_load(request):
+     if request.method != 'POST':
+diff --git a/backend/config/.env.example b/backend/config/.env.example
+index d8490a6..44eb2fa 100644
+--- a/backend/config/.env.example
++++ b/backend/config/.env.example
+@@ -11,8 +11,15 @@ COMPANY_CODE=2000
+ SALES_ORG=2000
+ LEDGER=0L
+ PERIOD_FROM=2025-07-01
+-# Upper bound on BillingDocumentDate. Omit to run through today; set a date to cap the display window.
+-REPORT_TO=2026-09-30
++# Reporting window END is derived on every refresh: the last day of the latest CLOSED period. There is no stored end date.
++# A month is closed once the current Africa/Kigali month is past it. Until SAP exposes posting-period status to this user, override
++# per period here (comma-separated YYYY-MM). PERIOD_OPEN wins over PERIOD_CLOSED.
++# PERIOD_CLOSED=2026-10
++# PERIOD_OPEN=
++# Loading: 'concurrent' reads the closed periods in parallel (up to LOAD_WORKERS at a time, all read-only GETs); 'sequential' reads them one by one.
++# The first load is cached on disk (backend/cache/dataset-cache.json) and reused at start-up until Refresh.
++LOAD_MODE=concurrent
++LOAD_WORKERS=4
+ OVERHEAD_GL=94301000
+ BATCH_CHUNK=50
+ 

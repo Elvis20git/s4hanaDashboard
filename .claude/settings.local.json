@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git apply *)",
+      "Bash(New-Item -ItemType Directory -Force -Path \"C:\\\\AIF_Dashboards\\\\AIF-VITE\\\\backend\\\\cache\")",
+      "Bash(Out-Null)",
+      "Bash(New-Item -ItemType File -Force -Path \"C:\\\\AIF_Dashboards\\\\AIF-VITE\\\\backend\\\\cache\\\\.gitkeep\")",
+      "Bash(Get-Content *)",
+      "Bash(node tests/run-all.mjs)",
+      "Bash(npx vite *)",
+      "Bash(AIF_NO_WARMUP=1 python backend/manage.py test analytics --settings=aif_backend.settings_test)",
+      "Bash(AIF_NO_WARMUP=1 python backend/manage.py test analytics.tests_periods analytics.tests_loading --settings=aif_backend.settings_test)"
+    ]
+  }
+}
