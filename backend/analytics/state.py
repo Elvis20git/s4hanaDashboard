@@ -1,6 +1,4 @@
-"""In-memory application state and the two data sources.
-PostgreSQL is the authoritative store; the in-memory state is a warm cache rebuilt from the DB on
-startup and refreshed after every SAP pull or spreadsheet load."""
+"""In-memory application state and the two data sources."""
 import json
 import os
 import threading
@@ -8,16 +6,21 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .config import BASE_DIR, CFG, FIXTURE_DATASET, VALIDATION_DIR, redact
+from . import datacache
+from .periods import _ym, effective_cfg, get_period_statuses, month_range, window_end
 from .pipeline.build import build
 from .pipeline.spreadsheet import build_from_files
 
 state = {
-    'api': {'data': None, 'error': None, 'lastRefresh': None, 'refreshing': False, 'log': []},
-    'spreadsheet': {'data': None, 'error': None, 'lastRefresh': None, 'loadHistory': []},
+    'api': {'data': None, 'error': None, 'lastRefresh': None, 'refreshing': False, 'warming': False, 'log': [], 'periodLoadedAt': {},
+            'periodErrors': {}, 'progress': None, 'fromCache': False, 'cachedAt': None},
+    'spreadsheet': {'data': None, 'error': None, 'lastRefresh': None, 'loadHistory': [], 'periodLoadedAt': {}, 'periodErrors': {}},
     'connection': {'ok': None, 'checkedAt': None, 'detail': None},
 }
 _refresh_lock = threading.Lock()
+_progress_lock = threading.Lock()
 
+# The two spreadsheet extracts warmed at start-up, looked up in AIF_SPREADSHEET_DIR, then backend/data/.
 DEFAULT_SPREADSHEETS = [
     'Line Items 01.01.2026 - 15.10.2026.xlsx',
     '20261015-175119_2CCSDREVNFRMINVCQ.xlsx',
@@ -30,8 +33,13 @@ def iso_now():
 
 
 def cap_to_report_window(data):
-    cutoff = CFG.get('REPORT_TO')
-    if not cutoff or not data or 'lines' not in data:
+    """The window end is derived (periods.window_end), never stored. build() applies it inside the SAP query for the live API source,
+    but a spreadsheet's full contents are read as given — this is the one place both sources pass through before being stored, so an
+    open month can never reach the dashboard by switching source."""
+    if not data or 'lines' not in data:
+        return data
+    cutoff = window_end(data.get('from') or CFG['PERIOD_FROM'], cfg=effective_cfg(CFG))
+    if not cutoff:
         return data
 
     def pkey(p):
@@ -55,65 +63,107 @@ def cap_to_report_window(data):
     return out
 
 
-def refresh_api(user=None):
-    """Rebuild the API dataset from SAP, persist to PostgreSQL, and update the in-memory cache."""
-    from django.utils import timezone as dj_tz
-    from .models import SyncRun
-    from .persist import persist_api_dataset
+def period_statuses(src='api', now=None):
+    """The shared status of every month for a source — used by the Periods panel, the "Data through" popover and the refresh."""
+    s = state[src]
+    d = s['data'] or {}
+    frm = d.get('from') or CFG['PERIOD_FROM']
+    return get_period_statuses(lines=d.get('lines') or [], frm=frm, now=now, cfg=effective_cfg(CFG), controls=d.get('controls'), frozen=d.get('frozen'),
+                               loaded_at=s.get('periodLoadedAt'), errors=s.get('periodErrors'))
 
+
+def _scope_months():
+    frm = CFG['PERIOD_FROM']
+    end = window_end(frm, cfg=effective_cfg(CFG))
+    return month_range(frm, end[:7]) if end else []
+
+
+def _begin(mode, reason):
+    """Claim the single loader. Returns False if a load is already running (never two at once)."""
     api = state['api']
     if not _refresh_lock.acquire(blocking=False):
-        return api
+        return False
+    months = _scope_months()
+    mode = mode if mode in ('concurrent', 'sequential') else (CFG.get('LOAD_MODE') or 'concurrent')
     api['refreshing'] = True
     api['log'] = []
+    api['progress'] = {'phase': 'extracting', 'mode': mode, 'reason': reason, 'startedAt': iso_now(), 'finishedAt': None,
+                       'total': len(months) + 1, 'done': 0, 'journal': 'pending', 'periods': {m: 'pending' for m in months}}
+    return True
 
-    run = SyncRun.objects.create(source='api', status='RUNNING',
-                                  triggered_by=user if user and user.pk else None)
+
+def _progress(kind, key, status):
+    api = state['api']
+    with _progress_lock:
+        p = api['progress']
+        if kind == 'period':
+            p['periods'][key] = status
+        elif kind == 'journal':
+            p['journal'] = status
+        elif kind == 'phase':
+            p['phase'] = key
+        p['done'] = sum(1 for v in p['periods'].values() if v == 'done') + (1 if p['journal'] == 'done' else 0)
+
+
+def _run(reason):
+    """Extract the closed window from SAP (read-only), then store, cache and record it. Caller holds the loader (see _begin)."""
+    api = state['api']
     try:
-        data = cap_to_report_window(build(log=api['log'].append))
+        data = cap_to_report_window(build(log=api['log'].append, mode=api['progress']['mode'], progress=_progress))
         api['data'] = data
         api['error'] = None
         api['lastRefresh'] = iso_now()
-
+        loaded = sorted({_ym(l['period']) for l in data['lines']})
+        api['periodLoadedAt'] = {p: api['lastRefresh'] for p in loaded}
+        api['periodErrors'] = {}
+        api['fromCache'], api['cachedAt'] = False, None
+        api['log'].append(f"window {data['from']} → {data['asOf']} · {len(loaded)} period(s) loaded")
         VALIDATION_DIR.mkdir(parents=True, exist_ok=True)
         (VALIDATION_DIR / 'dataset.json').write_text(json.dumps(data), encoding='utf-8')
-
-        counts = persist_api_dataset(data, sync_run=run)
-        api['log'].append(
-            f"persisted: {counts['lines']} lines, {counts['batches']} batch costs, "
-            f"{counts['materials']} materials, {counts['customers']} customers"
-        )
-        run.status = 'DONE'
-        run.rows_upserted = counts['lines']
-        run.finished_at = dj_tz.now()
-        run.save(update_fields=['status', 'rows_upserted', 'finished_at'])
-    except Exception as e:
+        try:
+            datacache.save(data, {'lastRefresh': api['lastRefresh'], 'periodLoadedAt': api['periodLoadedAt'],
+                                  'mode': api['progress']['mode'], 'reason': reason})
+        except Exception as e:       # a cache that cannot be written must never fail the load itself
+            api['log'].append('cache not saved: ' + redact(str(e)))
+        api['progress']['phase'] = 'done'
+    except Exception as e:  # surfaced to the UI as "Data unavailable"
         api['error'] = redact(str(e) or repr(e))
-        run.status = 'FAILED'
-        run.error_message = redact(str(e))
-        run.finished_at = dj_tz.now()
-        run.save(update_fields=['status', 'error_message', 'finished_at'])
+        api['periodErrors'] = {r['period']: api['error'] for r in period_statuses('api')['rows'] if r['closeStatus'] == 'Closed'}
+        api['progress']['phase'] = 'error'
     finally:
+        api['progress']['finishedAt'] = iso_now()
         api['refreshing'] = False
         _refresh_lock.release()
-    return api
 
 
-def load_spreadsheets(entries, user=None):
-    """Load Excel files, persist to PostgreSQL, and update the in-memory spreadsheet cache."""
+def refresh_api(mode=None, reason='refresh'):
+    """Blocking load (start-up, tests, scripts). The web UI uses start_refresh so the page stays responsive."""
+    if _begin(mode, reason):
+        _run(reason)
+    return state['api']
+
+
+def start_refresh(mode=None, reason='refresh'):
+    """Non-blocking load: returns at once; the work runs in a background thread and is reported through state['api']['progress'].
+    Returns False if a load is already running."""
+    if not _begin(mode, reason):
+        return False
+    threading.Thread(target=_run, args=(reason,), name='aif-load', daemon=True).start()
+    return True
+
+
+def load_spreadsheets(entries):
+    """Load Excel files and update the in-memory spreadsheet cache."""
     import re
-    from .persist import persist_spreadsheet_dataset
-
     li = next((e for e in entries if re.search(r'line\s*items', e['name'], re.I)), None)
     sv = next((e for e in entries if re.search(r'2CCSDREVNFRMINVCQ|sales\s*volume', e['name'], re.I)), None)
     data = cap_to_report_window(build_from_files(li['path'] if li else None, sv['path'] if sv else None))
-
-    counts = persist_spreadsheet_dataset(data)
 
     ss = state['spreadsheet']
     ss['data'] = data
     ss['lastRefresh'] = iso_now()
     ss['error'] = None
+    ss['periodLoadedAt'] = {p: ss['lastRefresh'] for p in sorted({_ym(l['period']) for l in data['lines']})}
     for l in data['loaded']:
         ss['loadHistory'].insert(0, {
             'file': l['file'], 'kind': l['kind'], 'rows': l['rows'],
@@ -136,68 +186,48 @@ def _find_default_files():
     return out
 
 
-def _load_from_db():
-    """Populate state from PostgreSQL on startup so the dashboard shows data immediately."""
-    from .persist import load_billing_lines_from_db
-    try:
-        ss_data = load_billing_lines_from_db('spreadsheet')
-        if ss_data:
-            state['spreadsheet'].update(data=ss_data, error=None, lastRefresh=iso_now())
-            print(f"  spreadsheet source restored from DB ({ss_data['counts']['lines']} lines)")
-    except Exception as e:
-        print('  DB load (spreadsheet) failed:', redact(str(e)))
-
-    try:
-        api_data = load_billing_lines_from_db('api')
-        if api_data:
-            state['api'].update(data=api_data, error=None, lastRefresh=iso_now())
-            print(f"  api source restored from DB ({api_data['counts']['lines']} lines)")
-    except Exception as e:
-        print('  DB load (api) failed:', redact(str(e)))
-
-
 def warm_up():
-    """Warm both sources. Tries DB first (fast), then falls back to files/SAP."""
-    from django.db import connection as _db_conn
+    """Open with every closed period loaded. First run: load them all from SAP (the UI shows "Loading data…") and cache the result.
+    Later runs: open from that cache at once and read nothing from SAP until Refresh — except a month that has closed since the cache
+    was written, which is loaded now. Runs in a background thread so the server answers immediately."""
     from . import sap
-
+    api = state['api']
+    api['warming'] = True
     try:
-        # Always try to restore from DB first — gives the dashboard data immediately on restart
-        _load_from_db()
-
-        # Spreadsheet: load from files if DB had nothing (first run) or files are newer
-        if not state['spreadsheet']['data']:
-            try:
-                load_spreadsheets(_find_default_files())
-                print('  spreadsheet source loaded from files')
-            except Exception as e:
-                state['spreadsheet']['error'] = redact(str(e))
-                print('  spreadsheet source failed:', state['spreadsheet']['error'])
-
+        try:
+            load_spreadsheets(_find_default_files())
+            print('  spreadsheet source loaded')
+        except Exception as e:
+            state['spreadsheet']['error'] = redact(str(e))
+            print('  spreadsheet source failed:', state['spreadsheet']['error'])
         if FIXTURE_DATASET:
-            if not state['api']['data']:
-                try:
-                    data = json.loads(Path(FIXTURE_DATASET).read_text(encoding='utf-8'))
-                    state['api'].update(data=data, error=None, lastRefresh=data.get('builtAt') or iso_now())
-                    state['connection'] = {'ok': True, 'checkedAt': iso_now(), 'detail': 'Fixture dataset — no SAP connection (test mode)'}
-                    print('  FIXTURE MODE — dataset loaded from', FIXTURE_DATASET)
-                except Exception as e:
-                    state['api']['error'] = redact(str(e))
-                    print('  fixture load failed:', state['api']['error'])
+            try:
+                data = json.loads(Path(FIXTURE_DATASET).read_text(encoding='utf-8'))
+                api.update(data=data, error=None, lastRefresh=data.get('builtAt') or iso_now())
+                state['connection'] = {'ok': True, 'checkedAt': iso_now(), 'detail': 'Fixture dataset — no SAP connection (test mode)'}
+                print('  FIXTURE MODE — dataset loaded from', FIXTURE_DATASET)
+            except Exception as e:
+                api['error'] = redact(str(e))
+                print('  fixture load failed:', api['error'])
             return
-
-        # Live SAP: only refresh if DB had no api data (first run or empty DB)
+        cached = datacache.load()
+        if cached:
+            data, meta = cached
+            api.update(data=data, error=None, lastRefresh=meta.get('lastRefresh'), fromCache=True, cachedAt=meta.get('savedAt'),
+                       periodLoadedAt=meta.get('periodLoadedAt') or {}, periodErrors={})
+            print(f"  live dataset opened from cache (saved {meta.get('savedAt')}) — no SAP read until Refresh")
         try:
             xml = sap.metadata('journal')
             state['connection'] = {'ok': True, 'checkedAt': iso_now(), 'detail': f'Connected — {len(xml)} bytes of metadata.'}
-            if not state['api']['data']:
-                print('  SAP connection OK — building live dataset…')
-                refresh_api()
-                print(f"  live build FAILED: {state['api']['error']}" if state['api']['error'] else '  live dataset ready')
-            else:
-                print('  SAP connection OK — serving from DB, use /api/refresh to pull latest data')
         except Exception as e:
             state['connection'] = {'ok': False, 'checkedAt': iso_now(), 'detail': redact(str(e))}
             print('  SAP connection failed:', state['connection']['detail'])
+            return
+        missing = [r['label'] for r in period_statuses('api')['rows'] if r['closeStatus'] == 'Closed' and r['loaded'] == 'No'] if cached else []
+        if cached and not missing:
+            return
+        print('  SAP connection OK — ' + (f"loading newly closed period(s): {', '.join(missing)}" if cached else 'first load, building live dataset…'))
+        refresh_api(reason='startup' if not cached else 'startup: newly closed ' + ', '.join(missing))
+        print(f"  live build FAILED: {api['error']}" if api['error'] else '  live dataset ready (cached for next start)')
     finally:
-        _db_conn.close()
+        api['warming'] = False

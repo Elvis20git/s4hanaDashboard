@@ -34,7 +34,7 @@ def load_env(path):
 FIXTURE_DATASET = Path(os.environ['AIF_FIXTURE_DATASET']).resolve() if os.environ.get('AIF_FIXTURE_DATASET') else None
 FIXTURE_DIR = Path(os.environ['AIF_FIXTURE_DIR']).resolve() if os.environ.get('AIF_FIXTURE_DIR') else None
 
-_SCOPE_KEYS = ['PORT', 'REPORT_TO', 'COMPANY_CODE', 'SALES_ORG', 'LEDGER', 'PERIOD_FROM', 'OVERHEAD_GL', 'BATCH_CHUNK']
+_SCOPE_KEYS = ['PORT', 'PERIOD_CLOSED', 'PERIOD_OPEN', 'LOAD_MODE', 'LOAD_WORKERS', 'COMPANY_CODE', 'SALES_ORG', 'LEDGER', 'PERIOD_FROM', 'OVERHEAD_GL', 'BATCH_CHUNK']
 
 
 def _find_env():

@@ -13,10 +13,11 @@ from .config import CFG, FIXTURE_DATASET, FIXTURE_DIR, redact
 from .cost import cache as cost_cache
 from .http import body_json as _body, jres
 from .jsutil import round2
+from .periods import effective_cfg, read_overrides, set_override, window_end
 from .pipeline import chat as chat_mod
 from .pipeline.aggregate import aggregate
 from .pipeline.modetail import link_for, order_cost_detail
-from .state import iso_now, load_spreadsheets, refresh_api, state
+from .state import iso_now, load_spreadsheets, period_statuses, refresh_api, start_refresh, state
 
 
 # ---------------------------------------------------------------- helpers
@@ -63,7 +64,8 @@ def status(request):
         'connection': conn,
         'sources': {
             'api': {'available': bool(api['data']), 'error': api['error'] if dm else None, 'refreshing': api['refreshing'],
-                    'lastRefresh': api['lastRefresh'],
+                    'lastRefresh': api['lastRefresh'], 'warming': api['warming'], 'progress': api['progress'],
+                    'fromCache': api['fromCache'], 'cachedAt': api['cachedAt'], 'loadMode': CFG.get('LOAD_MODE') or 'concurrent',
                     'periodFrom': api['data']['from'] if api['data'] else None, 'periodTo': api['data']['asOf'] if api['data'] else None,
                     'cogmAvailable': True, 'log': api['log'] if dm else []},
             'spreadsheet': {'available': bool(ss['data']), 'error': ss['error'] if dm else None, 'lastRefresh': ss['lastRefresh'],
@@ -206,11 +208,81 @@ def order(request, order_id):
 def refresh(request):
     if request.method != 'POST':
         return jres({'error': 'Method not allowed'}, 405)
+    body = _body(request)
+    mode = body.get('mode')
     if FIXTURE_DATASET:
         a = state['api']
         return jres({'ok': True, 'error': None, 'lastRefresh': a['lastRefresh'], 'log': a['log']})   # fixture mode: nothing to refresh
-    s = refresh_api(user=request.aif_user)
+    if body.get('async'):
+        # returns at once; the UI follows progress through /api/status
+        return jres({'ok': True, 'started': start_refresh(mode, 'refresh'), 'running': state['api']['refreshing']})
+    s = refresh_api(mode)
     return jres({'ok': not s['error'], 'error': s['error'], 'lastRefresh': s['lastRefresh'], 'log': s['log']})
+
+
+@guard(dashboard=perm.SALES)
+def periods(request):
+    """Status of every month in the window (shared helper periods.get_period_statuses). Error text is Data Management detail."""
+    out = period_statuses(_src(request))
+    dm = perm.can_view(request.aif_user, perm.DATA_MANAGEMENT)
+    ov = read_overrides() if dm else {}
+    for r in out['rows']:
+        r['override'] = ov.get(r['period'])      # {status, by, at} when someone set it by hand in the panel
+    if not dm:
+        for r in out['rows']:
+            r['error'] = None
+            if r['badge'] == 'red':
+                r['reason'] = 'Closed but not loaded'
+    return jres({'source': _src(request), **out})
+
+
+@guard(dashboard=perm.DATA_MANAGEMENT, steward=True)
+def period_reload(request, period):
+    """Re-extract one closed month (read-only from SAP). Batch cost is linked across months (a batch sold in Jan was made in Dec), so the
+    live window is re-extracted as a whole and every month's status is re-evaluated; the response reports the requested month."""
+    if request.method != 'POST':
+        return jres({'error': 'Method not allowed'}, 405)
+    row = next((r for r in period_statuses('api')['rows'] if r['period'] == period), None)
+    if not row:
+        return jres({'error': f'{period} is outside the reporting window.'}, 404)
+    if row['closeStatus'] != 'Closed':
+        return jres({'error': f"{row['label']} is not closed — open periods are excluded until month-end close."}, 409)
+    body = _body(request)
+    if body.get('async') and not FIXTURE_DATASET:
+        return jres({'ok': True, 'started': start_refresh(body.get('mode'), f'reload {period}'), 'running': state['api']['refreshing']})
+    if not FIXTURE_DATASET:
+        refresh_api(body.get('mode'), f'reload {period}')
+    out = period_statuses('api')
+    return jres({'ok': not state['api']['error'], 'error': state['api']['error'], 'period': next(r for r in out['rows'] if r['period'] == period),
+                 'summary': out['summary'], 'log': state['api']['log']})
+
+
+@guard(dashboard=perm.DATA_MANAGEMENT, steward=True)
+def period_status_set(request, period):
+    """Mark a month Closed or Open by hand (or back to 'auto'), then re-extract so the window, the cards and the panel follow.
+    SAP is only ever read. The change and who made it are kept in config/period_overrides.json."""
+    if request.method != 'POST':
+        return jres({'error': 'Method not allowed'}, 405)
+    body = _body(request)
+    status = body.get('status')
+    if status not in ('Closed', 'Open', 'auto'):
+        return jres({'error': "status must be 'Closed', 'Open' or 'auto'."}, 400)
+    before = period_statuses('api')
+    if not any(r['period'] == period for r in before['rows']):
+        return jres({'error': f'{period} is outside the reporting window.'}, 404)
+    proposed = {k: v for k, v in read_overrides().items() if k != period}
+    if status != 'auto':
+        proposed[period] = {'status': status}
+    if not window_end(CFG['PERIOD_FROM'], cfg=effective_cfg(CFG, proposed)):
+        return jres({'error': 'That would leave no closed period, so there would be nothing to report. Change refused.'}, 409)
+    set_override(period, status, request.aif_user.username)
+    if body.get('async') and not FIXTURE_DATASET:
+        return jres({'ok': True, 'started': start_refresh(body.get('mode'), f'{period} marked {status}'), 'running': state['api']['refreshing']})
+    if not FIXTURE_DATASET:
+        refresh_api(body.get('mode'), f'{period} marked {status}')
+    out = period_statuses('api')
+    return jres({'ok': not state['api']['error'], 'error': state['api']['error'], 'period': next(r for r in out['rows'] if r['period'] == period),
+                 'summary': out['summary'], 'log': state['api']['log']})
 
 
 @guard(dashboard=perm.DATA_MANAGEMENT, steward=True)
@@ -221,7 +293,7 @@ def spreadsheet_load(request):
         entries = [{'name': f['name'], 'path': str(Path(f['path']).resolve())} for f in (_body(request).get('files') or [])]
         if not entries:
             return jres({'error': 'No files given.'}, 400)
-        d = load_spreadsheets(entries, user=request.aif_user)
+        d = load_spreadsheets(entries)
         return jres({'ok': True, 'loaded': d['loaded'], 'counts': d['counts'], 'history': state['spreadsheet']['loadHistory']})
     except Exception as e:
         return jres({'error': redact(str(e))}, 400)

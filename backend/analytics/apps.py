@@ -24,4 +24,6 @@ class AnalyticsConfig(AppConfig):
     def ready(self):
         if _should_warm_up():
             from .state import warm_up
+            from .state import state
+            state['api']['warming'] = True          # the UI shows "Loading data…" from the first request, before the thread has begun
             threading.Thread(target=warm_up, name='aif-warm-up', daemon=True).start()

@@ -1,6 +1,7 @@
 """Full pipeline: billing -> revenue (USD) -> batches -> order cost -> frozen unit cost -> COGM per (line,batch) -> contribution margin
 -> controls. Every join to delivery, batch or order is a LEFT join (rule 1 — completeness)."""
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 from .. import sap
@@ -8,40 +9,98 @@ from ..config import CFG
 from ..cost import cache
 from ..cost.engine import (apportion, cost_lines, freeze_unit_costs, make_is_final, order_costs, round2)
 from ..jsutil import js_round, num, odata_date, to_fixed
+from ..periods import effective_cfg, kigali_today, last_day, month_range, window_end
 from .controls import run_controls
 
 KG_PER_MT = 1000
 
 
 def _today():
-    return datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    return kigali_today()      # Africa/Kigali (UTC+2): "today" and month boundaries are the business's, not UTC's
 
 
 def _period(d):
     return d[5:7] + '.' + d[0:4]
 
 
-def build(as_of=None, closure_as_of=None, log=None):
-    """`as_of` is the reporting cutoff: the upper bound on BillingDocumentDate, i.e. what the dashboard actually shows. Capping it
-    (via config REPORT_TO) removes a period from the dashboard completely — it is never fetched, not merely filtered client-side.
+def _extract_sales(frm, as_of, chunk, mode, workers, log, progress):
+    """Stages 1, 1b and 1c — everything read from SAP for the sales side — one task per closed month plus one for the revenue ledger.
+    `mode` 'concurrent' runs the tasks in a small thread pool (every call is a read-only GET); 'sequential' runs them one by one, in
+    order. Both return the same data: results are gathered in month order, so downstream joins see the same sequence either way.
+    The cost side (batches, orders) is NOT here — it spans months and runs once afterwards over all lines."""
+    months = [(ym, max(frm, ym + '-01'), min(as_of, last_day(ym))) for ym in month_range(frm, as_of)]
+
+    def month_task(ym, start, end):
+        progress('period', ym, 'loading')
+        try:
+            hdrs_all = sap.get_all('billing', 'A_BillingDocument', {
+                '$filter': f"SalesOrganization eq '{CFG['SALES_ORG']}' and CompanyCode eq '{CFG['COMPANY_CODE']}'"
+                           f" and BillingDocumentDate ge datetime'{start}T00:00:00'"
+                           f" and BillingDocumentDate le datetime'{end}T00:00:00'",
+                '$select': 'BillingDocument,BillingDocumentDate,BillingDocumentType,BillingDocumentIsCancelled,'
+                           'CancelledBillingDocument,SoldToParty,AccountingDocument,FiscalYear,CompanyCode,'
+                           'AccountingPostingStatus,TransactionCurrency',
+            }, page=5000)
+            posted = [h for h in hdrs_all if h.get('AccountingPostingStatus') == 'C']
+            items_all = sap.get_by_keys('billing', 'A_BillingDocumentItem', 'BillingDocument', [h['BillingDocument'] for h in posted],
+                                        chunk=chunk, params={
+                '$select': 'BillingDocument,BillingDocumentItem,Material,Batch,Plant,BillingQuantity,'
+                           'BillingQuantityUnit,BillingQuantityInBaseUnit,BaseUnit,NetAmount,TransactionCurrency,'
+                           'ReferenceSDDocument,ReferenceSDDocumentItem,SalesDocument'})
+        except Exception:
+            progress('period', ym, 'error')
+            raise
+        progress('period', ym, 'done')
+        return hdrs_all, items_all
+
+    def journal_task():
+        progress('journal', '', 'loading')
+        try:
+            rows = sap.get_all('journal', 'YY1_AIF_JOURNAL_REV', {
+                '$filter': f"Ledger eq '{CFG['LEDGER']}' and CompanyCode eq '{CFG['COMPANY_CODE']}' and startswith(GLAccount,'41')",
+            }, page=5000)
+        except Exception:
+            progress('journal', '', 'error')
+            raise
+        progress('journal', '', 'done')
+        return rows
+
+    tasks = [journal_task] + [(lambda m=m: month_task(*m)) for m in months]       # the ledger first: it is the longest single read
+    log(f"extracting {len(months)} period(s) {'concurrently, up to ' + str(workers) + ' at a time' if mode == 'concurrent' else 'one by one'}")
+    if mode == 'sequential':
+        results = [t() for t in tasks]
+    else:
+        with ThreadPoolExecutor(max_workers=max(1, workers)) as ex:
+            futures = [ex.submit(t) for t in tasks]
+            results = [f.result() for f in futures]
+    jrev_all = results[0]
+    hdrs_all = [h for r in results[1:] for h in r[0]]
+    items_all = [i for r in results[1:] for i in r[1]]
+    return hdrs_all, items_all, jrev_all
+
+
+def build(as_of=None, closure_as_of=None, log=None, mode=None, workers=None, progress=None):
+    """`as_of` is the reporting cutoff: the upper bound on BillingDocumentDate, i.e. what the dashboard actually shows. It is DERIVED on
+    every build — the last day of the latest closed period (periods.window_end: config override, else the Kigali calendar rule) — so an
+    open month is never fetched and a newly closed month is picked up by the next refresh. There is no stored end date.
     `closure_as_of` is the REAL current date, used only to decide whether a batch's feeding orders are still open."""
-    as_of = as_of or CFG.get('REPORT_TO') or _today()
-    closure_as_of = closure_as_of or _today()
     log = log or (lambda m: None)
     started = time.time()
     frm = CFG['PERIOD_FROM']
+    if CFG.get('REPORT_TO'):
+        log('NOTE: REPORT_TO is no longer used — the window end is derived from closed periods. Remove it from .env.')
+    as_of = as_of or window_end(frm, cfg=effective_cfg(CFG))
+    if not as_of:
+        raise RuntimeError(f'No closed period on or after {frm} — nothing to report yet.')
+    closure_as_of = closure_as_of or _today()
     chunk = int(CFG.get('BATCH_CHUNK') or 50)
     log(f'scope {frm} .. {as_of}' + (f' (period-closure evaluated as of {closure_as_of})' if closure_as_of != as_of else ''))
 
-    # ---------- Stage 1: billing documents in scope ----------
-    hdrs_all = sap.get_all('billing', 'A_BillingDocument', {
-        '$filter': f"SalesOrganization eq '{CFG['SALES_ORG']}' and CompanyCode eq '{CFG['COMPANY_CODE']}'"
-                   f" and BillingDocumentDate ge datetime'{frm}T00:00:00'"
-                   f" and BillingDocumentDate le datetime'{as_of}T00:00:00'",
-        '$select': 'BillingDocument,BillingDocumentDate,BillingDocumentType,BillingDocumentIsCancelled,'
-                   'CancelledBillingDocument,SoldToParty,AccountingDocument,FiscalYear,CompanyCode,'
-                   'AccountingPostingStatus,TransactionCurrency',
-    }, page=5000)
+    # ---------- Stage 1 / 1b / 1c: billing documents, their items and the revenue ledger — per month, in the chosen mode ----------
+    mode = mode or CFG.get('LOAD_MODE') or 'concurrent'
+    workers = workers or int(CFG.get('LOAD_WORKERS') or 4)
+    progress = progress or (lambda kind, key, status: None)
+    hdrs_all, items_all, jrev_all = _extract_sales(frm, as_of, chunk, mode, workers, log, progress)
     hdrs = [h for h in hdrs_all if h.get('AccountingPostingStatus') == 'C']
     log(f'billing documents: {len(hdrs_all)} retrieved, {len(hdrs)} posted to accounting')
 
@@ -51,12 +110,7 @@ def build(as_of=None, closure_as_of=None, log=None):
     by_acct = {acct_key(h): h for h in hdrs}
     by_doc = {h['BillingDocument']: h for h in hdrs}
 
-    # ---------- Stage 1b: billing items (these carry the batch split) ----------
-    items_all = sap.get_by_keys('billing', 'A_BillingDocumentItem', 'BillingDocument', [h['BillingDocument'] for h in hdrs],
-                                chunk=chunk, params={
-        '$select': 'BillingDocument,BillingDocumentItem,Material,Batch,Plant,BillingQuantity,'
-                   'BillingQuantityUnit,BillingQuantityInBaseUnit,BaseUnit,NetAmount,TransactionCurrency,'
-                   'ReferenceSDDocument,ReferenceSDDocumentItem,SalesDocument'})
+    # ---------- billing items (these carry the batch split) ----------
     # Split parents carry zero quantity AND zero value. They contribute nothing and would double-count the document if kept.
     items = [i for i in items_all if num(i.get('BillingQuantityInBaseUnit')) != 0 or num(i.get('NetAmount')) != 0]
     log(f'billing items: {len(items_all)} ({len(items_all) - len(items)} zero-value split parents set aside)')
@@ -81,9 +135,6 @@ def build(as_of=None, closure_as_of=None, log=None):
     # ---------- Stage 1c: revenue in GLOBAL CURRENCY from the ledger ----------
     # Revenue originates from the billing document set (rule 6). The ledger supplies the USD valuation because the billing API
     # exposes transaction currency only.
-    jrev_all = sap.get_all('journal', 'YY1_AIF_JOURNAL_REV', {
-        '$filter': f"Ledger eq '{CFG['LEDGER']}' and CompanyCode eq '{CFG['COMPANY_CODE']}' and startswith(GLAccount,'41')",
-    }, page=5000)
     jrev = []
     for r in jrev_all:
         d = odata_date(r.get('PostingDate'))
@@ -138,6 +189,7 @@ def build(as_of=None, closure_as_of=None, log=None):
         })
     log(f"lines assembled: {len(lines)} ({sum(1 for l in lines if not l['itemResolved'])} without a billing-item match)")
 
+    progress('phase', 'costing', 'running')
     # ---------- Stage 2: batches sold, and the orders behind them ----------
     sold_set = set(l['batch'] for l in lines if l['batch'])
     log(f'distinct batches sold: {len(sold_set)}')
